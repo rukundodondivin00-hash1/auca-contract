@@ -15,7 +15,8 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(AucaApiException.class)
     public ResponseEntity<ApiResponse<Void>> handleAucaApi(AucaApiException e) {
         log.error("AUCA API error: {}", e.getMessage());
-        return ResponseEntity.status(HttpStatus.BAD_GATEWAY).body(ApiResponse.error(e.getMessage()));
+        return ResponseEntity.status(HttpStatus.BAD_GATEWAY)
+            .body(ApiResponse.error("AUCA service error: " + e.getMessage()));
     }
 
     @ExceptionHandler(ContractException.class)

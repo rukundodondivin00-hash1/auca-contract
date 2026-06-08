@@ -26,6 +26,7 @@ public class AucaApiClient {
         String url = baseUrl + "/api/v1/common/auth/signin";
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.APPLICATION_JSON);
+        headers.set("x-ims-api-key", apiKey);
         var body = new LoginRequest();
         body.setUsername(username);
         body.setPassword(password);
@@ -36,10 +37,11 @@ public class AucaApiClient {
             if (response.getStatusCode() == HttpStatus.OK && response.getBody() != null) {
                 return response.getBody();
             }
-            throw new AucaApiException("Authentication failed");
+            log.error("AUCA auth returned status: {}", response.getStatusCode());
+            throw new AucaApiException("Authentication failed with status: " + response.getStatusCode());
         } catch (Exception e) {
-            log.error("AUCA auth error: {}", e.getMessage());
-            throw new AucaApiException("Invalid credentials");
+            log.error("AUCA auth error for user {}: {}", username, e.getMessage(), e);
+            throw new AucaApiException("Invalid credentials or AUCA service unavailable");
         }
     }
 
