@@ -24,6 +24,7 @@ public class ContractService {
     private final InstallmentRepository installmentRepository;
     private final BalanceCalculator balanceCalculator;
     private final EligibilityChecker eligibilityChecker;
+    private final SemesterInstallmentValidator semesterInstallmentValidator;
 
     @Transactional
     public ContractDto createContract(String studentId, ContractRequest request) {
@@ -60,13 +61,12 @@ public class ContractService {
                 "Total installment amounts (" + installmentTotal + ") must equal your remaining balance (" + remainingAmount + ").");
         }
 
-        // Validate all dates are future and in order
-        List<InstallmentRequest> installments = request.getInstallments();
-        for (int i = 1; i < installments.size(); i++) {
-            if (!installments.get(i).getDeadlineDate().isAfter(installments.get(i - 1).getDeadlineDate())) {
-                throw new ContractException("Installment deadlines must be in ascending order.");
-            }
-        }
+        // Validate semester-based installment count and deadlines
+        List<LocalDate> deadlines = request.getInstallments().stream()
+            .map(InstallmentRequest::getDeadlineDate)
+            .toList();
+        int academicYear = Integer.parseInt(term.getYear());
+        semesterInstallmentValidator.validateInstallments(term.getId(), academicYear, deadlines);
 
         // Create contract
         Contract contract = Contract.builder()
@@ -87,8 +87,8 @@ public class ContractService {
         Contract saved = contractRepository.save(contract);
 
         // Save installments
-        for (int i = 0; i < installments.size(); i++) {
-            InstallmentRequest ir = installments.get(i);
+        for (int i = 0; i < request.getInstallments().size(); i++) {
+            InstallmentRequest ir = request.getInstallments().get(i);
             ContractInstallment installment = ContractInstallment.builder()
                 .contract(saved)
                 .installmentNumber(i + 1)

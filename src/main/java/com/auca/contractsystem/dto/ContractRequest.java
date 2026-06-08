@@ -8,7 +8,7 @@ import java.util.List;
 @Data
 public class ContractRequest {
     @NotNull(message = "Installments are required")
-    @Size(min = 2, max = 4, message = "You must have between 2 and 4 installments")
+    @Size(min = 1, message = "At least one installment is required")
     @Valid
     private List<InstallmentRequest> installments;
 }

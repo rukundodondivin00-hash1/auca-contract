@@ -12,6 +12,5 @@ public class InstallmentRequest {
     private BigDecimal amount;
 
     @NotNull(message = "Deadline date is required")
-    @Future(message = "Deadline must be a future date")
     private LocalDate deadlineDate;
 }
