@@ -45,6 +45,27 @@ http://localhost:8080/swagger-ui.html
 ### Admin
 - GET /api/admin/contracts — Get all contracts (finance officer)
 
+## Installment Rules by Semester
+
+The system enforces semester-based installment deadlines based on the active term (format: `YYYY/S` where S is semester):
+
+### Semester 1 (e.g., 2025/1)
+- **Number of installments:** 2
+- **Deadline 1:** October 31 (last day of October)
+- **Deadline 2:** November 30 (last day of November)
+
+### Semester 2 (e.g., 2025/2)
+- **Number of installments:** 3
+- **Deadline 1:** February 28/29 (last day of February)
+- **Deadline 2:** March 31 (last day of March)
+- **Deadline 3:** April 30 (last day of April)
+
+**Validation rules:**
+- Installment count must match semester requirements
+- All deadline dates must be the last day of the expected month
+- Total installment amounts must equal remaining balance
+- Student must have paid at least 50% of total fees to be eligible
+
 ## How it works
 
 1. Student logs in → AUCA auth → our JWT issued
