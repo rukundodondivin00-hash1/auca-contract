@@ -82,7 +82,7 @@ public class AucaApiClient {
     }
 
     public AucaBalanceResponse getBalance(String studentId) {
-        String url = baseUrl + "/api/v1/finance/student-payments/" + studentId + "/balance";
+        String url = baseUrl + "/api/v1/finance/student-payments/my-balance";
         HttpHeaders headers = new HttpHeaders();
         headers.set("x-ims-api-key", apiKey);
         HttpEntity<Void> request = new HttpEntity<>(headers);
@@ -96,6 +96,42 @@ public class AucaApiClient {
         } catch (Exception e) {
             log.error("AUCA balance error for {}: {}", studentId, e.getMessage());
             throw new AucaApiException("Failed to fetch balance from AUCA");
+        }
+    }
+
+    public AucaStudentDashboardResponse getStudentDashboard(String studentId) {
+        String url = baseUrl + "/api/v1/common/student/dashboard?studentId=" + studentId;
+        HttpHeaders headers = new HttpHeaders();
+        headers.set("x-ims-api-key", apiKey);
+        HttpEntity<Void> request = new HttpEntity<>(headers);
+        try {
+            ResponseEntity<AucaStudentDashboardResponse> response = restTemplate.exchange(
+                url, HttpMethod.GET, request, AucaStudentDashboardResponse.class);
+            if (response.getStatusCode() == HttpStatus.OK && response.getBody() != null) {
+                return response.getBody();
+            }
+            throw new AucaApiException("Student dashboard not found");
+        } catch (Exception e) {
+            log.error("AUCA student dashboard error for {}: {}", studentId, e.getMessage());
+            throw new AucaApiException("Failed to fetch student dashboard from AUCA");
+        }
+    }
+
+    public AucaTranscriptResponse getTranscript(String studentId) {
+        String url = baseUrl + "/api/v1/common/student/transcript?studentId=" + studentId;
+        HttpHeaders headers = new HttpHeaders();
+        headers.set("x-ims-api-key", apiKey);
+        HttpEntity<Void> request = new HttpEntity<>(headers);
+        try {
+            ResponseEntity<AucaTranscriptResponse> response = restTemplate.exchange(
+                url, HttpMethod.GET, request, AucaTranscriptResponse.class);
+            if (response.getStatusCode() == HttpStatus.OK && response.getBody() != null) {
+                return response.getBody();
+            }
+            throw new AucaApiException("Transcript not found");
+        } catch (Exception e) {
+            log.error("AUCA transcript error for {}: {}", studentId, e.getMessage());
+            throw new AucaApiException("Failed to fetch transcript from AUCA");
         }
     }
 }

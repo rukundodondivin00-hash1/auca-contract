@@ -1,16 +1,18 @@
-package com.auca.contractsystem.dto;
+package com.auca.contractsystem.dto.admin;
 
-import lombok.*;
+import lombok.Data;
+import lombok.Builder;
+import lombok.AllArgsConstructor;
+import lombok.NoArgsConstructor;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
-import java.util.List;
 
 @Data
 @Builder
-@NoArgsConstructor
 @AllArgsConstructor
-public class InstallmentDto {
+@NoArgsConstructor
+public class AdminInstallmentDto {
     private String id;
     private String contractId;
     private Integer installmentNumber;
@@ -20,5 +22,8 @@ public class InstallmentDto {
     private BigDecimal penaltyAmount;
     private String status;
     private LocalDateTime paidAt;
-    private List<PenaltyHistoryDto> penaltyHistories;
+    private LocalDateTime createdAt;
+    private LocalDateTime updatedAt;
+    private String studentName;
+    private String termId;
 }

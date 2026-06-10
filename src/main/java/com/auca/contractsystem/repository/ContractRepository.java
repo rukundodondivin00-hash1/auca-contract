@@ -1,6 +1,8 @@
 package com.auca.contractsystem.repository;
 
 import com.auca.contractsystem.entity.Contract;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 import java.util.List;
@@ -12,4 +14,5 @@ public interface ContractRepository extends JpaRepository<Contract, String> {
     List<Contract> findByStudentId(String studentId);
     List<Contract> findByStatus(Contract.ContractStatus status);
     List<Contract> findAllByOrderByCreatedAtDesc();
+    Page<Contract> findByStudentNameContainingIgnoreCaseOrStudentIdContainingIgnoreCase(String studentName, String studentId, Pageable pageable);
 }

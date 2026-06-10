@@ -36,14 +36,32 @@ http://localhost:8080/swagger-ui.html
 - POST /api/auth/login — Login with AUCA credentials, returns JWT token
 
 ### Dashboard
-- GET /api/dashboard — Returns everything: student info, fees, balance, contract, installments
+- GET /api/dashboard — Returns unified student data: academic, financial, contract, registration info
 
 ### Contracts
-- POST /api/contracts — Create contract with installments
-- GET /api/contracts/my-contracts — Get student's contracts
+- POST /api/contracts — Create contract with installments (requires authentication)
+- GET /api/contracts/my-contracts — Get authenticated student's contracts
 
-### Admin
-- GET /api/admin/contracts — Get all contracts (finance officer)
+### Admin (requires `ROLE_ADMIN` in JWT)
+- GET /api/admin/contracts — List all contracts (paginated)
+- GET /api/admin/contracts/{id} — Get contract by ID
+- GET /api/admin/contracts/student/{studentId} — Get contracts by student
+- GET /api/admin/contracts/status/{status} — Filter contracts by status (PENDING, ACTIVE, COMPLETED, CANCELLED, OVERDUE)
+- PATCH /api/admin/contracts/{id}/status — Update contract status
+- DELETE /api/admin/contracts/{id} — Delete contract
+- POST /api/admin/contracts/bulk/status — Bulk update contract statuses
+
+- GET /api/admin/installments — List all installments (paginated)
+- GET /api/admin/installments/contract/{contractId} — Get installments by contract
+- PATCH /api/admin/installments/{id}/status — Update installment status
+- PATCH /api/admin/installments/{id}/waive-penalty — Waive penalty for an installment
+
+- GET /api/admin/penalties — List all penalty history (paginated)
+- GET /api/admin/penalties/installment/{installmentId} — Get penalties by installment
+- GET /api/admin/penalties/contract/{contractId} — Get penalties by contract
+
+- GET /api/admin/students?keyword={search} — Search students by name or ID (paginated)
+- GET /api/admin/students/{studentId}/summary — Get student financial summary across contracts
 
 ## Installment Rules by Semester
 
@@ -74,6 +92,13 @@ The system enforces semester-based installment deadlines based on the active ter
 4. Backend calculates: paid amount, remaining, percentage, eligibility
 5. Backend fetches: contract + installments from our PostgreSQL
 6. Returns everything in one response
+
+## Roles
+
+- **STUDENT** — Default role from AUCA IMS. Can access student endpoints only.
+- **ADMIN** — Must be granted by AUCA IMS. Can access `/api/admin/**` endpoints.
+
+The JWT stores the role issued by AUCA. Backend does not override or change roles.
 
 ## Penalty Scheduler
 Runs every day at midnight. Checks all PENDING installments with past deadlines and applies 5% penalty automatically.
