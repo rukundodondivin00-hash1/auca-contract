@@ -4,6 +4,7 @@ import com.auca.contractsystem.client.AucaApiClient;
 import com.auca.contractsystem.dto.*;
 import com.auca.contractsystem.entity.Contract;
 import com.auca.contractsystem.entity.ContractInstallment;
+import com.auca.contractsystem.exception.AucaApiException;
 import com.auca.contractsystem.repository.ContractRepository;
 import com.auca.contractsystem.repository.InstallmentRepository;
 import com.auca.contractsystem.util.BalanceCalculator;
@@ -11,6 +12,7 @@ import com.auca.contractsystem.util.EligibilityChecker;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
+
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.util.Collections;
@@ -32,57 +34,77 @@ public class DashboardService {
     public UnifiedDashboardResponse getUnifiedDashboard(String studentId) {
         log.info("Building unified dashboard for student: {}", studentId);
 
-        AucaTermResponse term = aucaApiClient.getActiveTerm();
-        AucaRegistrationResponse registration = aucaApiClient.getRegistration(studentId, term.getId());
-        AucaStudentDashboardResponse studentDashboard = aucaApiClient.getStudentDashboard(studentId);
-        AucaBalanceResponse balanceResponse = aucaApiClient.getBalance(studentId);
+        AucaTermResponse term = safeCall(() -> aucaApiClient.getActiveTerm(), "active term");
+        AucaRegistrationResponse registration = safeCall(
+            () -> aucaApiClient.getRegistration(studentId, term != null ? term.getId() : null),
+            "registration"
+        );
+        AucaStudentDashboardResponse studentDashboard = safeCall(
+            () -> aucaApiClient.getStudentDashboard(studentId), "student dashboard");
+        AucaBalanceResponse balanceResponse = safeCall(
+            () -> aucaApiClient.getBalance(studentId), "balance");
 
-        BigDecimal balance = balanceResponse.getBalance();
-        BigDecimal totalFees = registration.getTotalFee();
-        BigDecimal paidAmount = balanceCalculator.calculatePaidAmount(totalFees, balance);
-        BigDecimal remainingAmount = balanceCalculator.calculateRemainingAmount(balance);
-        Double paidPercentage = balanceCalculator.calculatePaidPercentage(paidAmount, totalFees);
-        boolean eligible = eligibilityChecker.isEligible(balance, paidPercentage);
+        StudentDto studentDto = null;
+        if (registration != null) {
+            studentDto = StudentDto.builder()
+                .id(studentId)
+                .name(registration.getStudentName())
+                .email(null)
+                .department(registration.getStudentDepartment())
+                .departmentCode(registration.getStudentDepartmentCode())
+                .program(registration.getStudentProgram())
+                .build();
+        }
 
-        Optional<Contract> contractOpt = contractRepository.findByStudentIdAndTermId(studentId, term.getId());
-        ContractResponseDto contractDto = contractOpt.map(this::toContractResponseDto).orElse(
-            ContractResponseDto.builder().hasContract(false).installments(Collections.emptyList()).build());
+        AcademicDto academicDto = null;
+        if (term != null && studentDashboard != null) {
+            Integer semesterNumber = mapSemesterToNumber(term.getSemester());
+            academicDto = AcademicDto.builder()
+                .activeTerm(term.getId())
+                .semesterNumber(semesterNumber)
+                .semesterName(term.getSemester())
+                .credits(studentDashboard.getGpaData() != null ? studentDashboard.getGpaData().getTotalCreditsEarned() : 0)
+                .cumulativeGpa(studentDashboard.getGpaData() != null ? studentDashboard.getGpaData().getCumulativeGPA() : null)
+                .registeredCredits(studentDashboard.getRegistrationSummary() != null
+                    ? studentDashboard.getRegistrationSummary().getRegisteredCredits()
+                    : 0)
+                .build();
+        }
 
-        RegistrationDto registrationDto = RegistrationDto.builder()
-            .isRegistrationOpen(Boolean.TRUE.equals(registration.getIsRegistrationOpen()))
-            .courses(registration.getCourses() != null 
-                ? registration.getCourses().stream().map(this::toCourseDto).collect(Collectors.toList())
-                : Collections.emptyList())
-            .build();
+        FinancialDto financialDto = null;
+        if (registration != null && balanceResponse != null) {
+            BigDecimal balance = balanceResponse.getBalance();
+            BigDecimal totalFees = registration.getTotalFee();
+            BigDecimal paidAmount = balanceCalculator.calculatePaidAmount(totalFees, balance);
+            BigDecimal remainingAmount = balanceCalculator.calculateRemainingAmount(balance);
+            Double paidPercentage = balanceCalculator.calculatePaidPercentage(paidAmount, totalFees);
+            boolean eligible = eligibilityChecker.isEligible(balance, paidPercentage);
 
-        StudentDto studentDto = StudentDto.builder()
-            .id(studentId)
-            .name(registration.getStudentName())
-            .email(null)
-            .department(registration.getStudentDepartment())
-            .departmentCode(registration.getStudentDepartmentCode())
-            .program(registration.getStudentProgram())
-            .build();
+            financialDto = FinancialDto.builder()
+                .totalFees(totalFees)
+                .paidAmount(paidAmount)
+                .remainingBalance(remainingAmount)
+                .paymentPercentage(BigDecimal.valueOf(paidPercentage).setScale(2, RoundingMode.HALF_UP))
+                .isEligibleForContract(eligible)
+                .build();
+        }
 
-        Integer semesterNumber = mapSemesterToNumber(term.getSemester());
-        AcademicDto academicDto = AcademicDto.builder()
-            .activeTerm(term.getId())
-            .semesterNumber(semesterNumber)
-            .semesterName(term.getSemester())
-            .credits(studentDashboard.getTotalCreditsEarned())
-            .cumulativeGpa(studentDashboard.getCumulativeGPA())
-            .registeredCredits(studentDashboard.getRegistrationSummary() != null 
-                ? studentDashboard.getRegistrationSummary().getRegisteredCredits() 
-                : 0)
-            .build();
+        ContractResponseDto contractDto = null;
+        if (term != null) {
+            Optional<Contract> contractOpt = contractRepository.findByStudentIdAndTermId(studentId, term.getId());
+            contractDto = contractOpt.map(this::toContractResponseDto).orElse(
+                ContractResponseDto.builder().hasContract(false).installments(Collections.emptyList()).build());
+        }
 
-        FinancialDto financialDto = FinancialDto.builder()
-            .totalFees(totalFees)
-            .paidAmount(paidAmount)
-            .remainingBalance(remainingAmount)
-            .paymentPercentage(BigDecimal.valueOf(paidPercentage).setScale(2, RoundingMode.HALF_UP))
-            .isEligibleForContract(eligible)
-            .build();
+        RegistrationDto registrationDto = null;
+        if (registration != null) {
+            registrationDto = RegistrationDto.builder()
+                .isRegistrationOpen(Boolean.TRUE.equals(registration.getIsRegistrationOpen()))
+                .courses(registration.getCourses() != null
+                    ? registration.getCourses().stream().map(this::toCourseDto).collect(Collectors.toList())
+                    : Collections.emptyList())
+                .build();
+        }
 
         return UnifiedDashboardResponse.builder()
             .student(studentDto)
@@ -91,6 +113,15 @@ public class DashboardService {
             .contract(contractDto)
             .registration(registrationDto)
             .build();
+    }
+
+    private <T> T safeCall(java.util.concurrent.Callable<T> callable, String name) {
+        try {
+            return callable.call();
+        } catch (Exception e) {
+            log.warn("AUCA {} fetch failed: {}", name, e.getMessage());
+            return null;
+        }
     }
 
     private Integer mapSemesterToNumber(String semester) {
@@ -118,7 +149,7 @@ public class DashboardService {
     private ContractResponseDto toContractResponseDto(Contract c) {
         List<InstallmentResponseDto> installments = installmentRepository.findByContractId(c.getId())
             .stream().map(this::toInstallmentResponseDto).collect(Collectors.toList());
-        
+
         return ContractResponseDto.builder()
             .hasContract(true)
             .installments(installments)

@@ -100,7 +100,7 @@ public class AucaApiClient {
     }
 
     public AucaStudentDashboardResponse getStudentDashboard(String studentId) {
-        String url = baseUrl + "/api/v1/common/student/dashboard?studentId=" + studentId;
+        String url = baseUrl + "/api/v1/common/student/dashboard";
         HttpHeaders headers = new HttpHeaders();
         headers.set("x-ims-api-key", apiKey);
         HttpEntity<Void> request = new HttpEntity<>(headers);
