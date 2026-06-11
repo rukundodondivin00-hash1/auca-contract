@@ -26,7 +26,7 @@ public class AucaApiClient {
         String url = baseUrl + "/api/v1/common/auth/signin";
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.APPLICATION_JSON);
-        headers.set("x-ims-api-key", apiKey);
+        // headers.set("x-ims-api-key", apiKey); // removed - AUCA does not require it
         var body = new LoginRequest();
         body.setUsername(username);
         body.setPassword(password);
@@ -48,7 +48,7 @@ public class AucaApiClient {
     public AucaTermResponse getActiveTerm() {
         String url = baseUrl + "/api/v1/registration/term";
         HttpHeaders headers = new HttpHeaders();
-        headers.set("x-ims-api-key", apiKey);
+        // headers.set("x-ims-api-key", apiKey); // removed - AUCA does not require it
         HttpEntity<Void> request = new HttpEntity<>(headers);
         try {
             ResponseEntity<AucaTermResponse> response = restTemplate.exchange(
@@ -66,7 +66,7 @@ public class AucaApiClient {
     public AucaRegistrationResponse getRegistration(String studentId, String termId) {
         String url = baseUrl + "/api/v1/registration/registration?studentId=" + studentId + "&termId=" + termId;
         HttpHeaders headers = new HttpHeaders();
-        headers.set("x-ims-api-key", apiKey);
+        // headers.set("x-ims-api-key", apiKey); // removed - AUCA does not require it
         HttpEntity<Void> request = new HttpEntity<>(headers);
         try {
             ResponseEntity<AucaRegistrationResponse> response = restTemplate.exchange(
@@ -101,7 +101,7 @@ public class AucaApiClient {
     public AucaStudentDashboardResponse getStudentDashboard(String studentId) {
         String url = baseUrl + "/api/v1/common/student/dashboard";
         HttpHeaders headers = new HttpHeaders();
-        headers.set("x-ims-api-key", apiKey);
+        // headers.set("x-ims-api-key", apiKey); // removed - AUCA does not require it
         HttpEntity<Void> request = new HttpEntity<>(headers);
         try {
             ResponseEntity<AucaStudentDashboardResponse> response = restTemplate.exchange(
@@ -119,7 +119,7 @@ public class AucaApiClient {
     public AucaTranscriptResponse getTranscript(String studentId) {
         String url = baseUrl + "/api/v1/common/student/transcript?studentId=" + studentId;
         HttpHeaders headers = new HttpHeaders();
-        headers.set("x-ims-api-key", apiKey);
+        // headers.set("x-ims-api-key", apiKey); // removed - AUCA does not require it
         HttpEntity<Void> request = new HttpEntity<>(headers);
         try {
             ResponseEntity<AucaTranscriptResponse> response = restTemplate.exchange(
