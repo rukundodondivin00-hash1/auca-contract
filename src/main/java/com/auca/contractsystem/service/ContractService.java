@@ -30,7 +30,16 @@ public class ContractService {
     public ContractDto createContract(String studentId, ContractRequest request) {
         log.info("Creating contract for student: {}", studentId);
 
-        // Fetch live data from AUCA
+        try {
+            return createContractInternal(studentId, request);
+        } catch (AucaApiException e) {
+            log.error("AUCA service unavailable during contract creation: {}", e.getMessage());
+            throw new ContractException("Cannot create contract: AUCA service is currently unavailable. Please try again later.");
+        }
+    }
+
+    @Transactional
+    public ContractDto createContractInternal(String studentId, ContractRequest request) {
         AucaTermResponse term = aucaApiClient.getActiveTerm();
         AucaRegistrationResponse registration = aucaApiClient.getRegistration(studentId, term.getId());
         AucaBalanceResponse balanceResponse = aucaApiClient.getBalance(studentId);
@@ -41,17 +50,14 @@ public class ContractService {
         BigDecimal remainingAmount = balanceCalculator.calculateRemainingAmount(balance);
         Double paidPercentage = balanceCalculator.calculatePaidPercentage(paidAmount, totalFees);
 
-        // Check eligibility
         if (!eligibilityChecker.isEligible(balance, paidPercentage)) {
             throw new ContractException("You are not eligible for a contract. You must pay at least 50% of your total fees.");
         }
 
-        // Check if contract already exists for this term
         contractRepository.findByStudentIdAndTermId(studentId, term.getId()).ifPresent(c -> {
             throw new ContractException("A contract already exists for this term.");
         });
 
-        // Validate installments sum equals remaining balance
         BigDecimal installmentTotal = request.getInstallments().stream()
             .map(InstallmentRequest::getAmount)
             .reduce(BigDecimal.ZERO, BigDecimal::add);
@@ -61,7 +67,6 @@ public class ContractService {
                 "Total installment amounts (" + installmentTotal + ") must equal your remaining balance (" + remainingAmount + ").");
         }
 
-        // Validate semester-based installment count and deadlines
         List<LocalDate> deadlines = request.getInstallments().stream()
             .map(InstallmentRequest::getDeadlineDate)
             .toList();
