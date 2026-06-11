@@ -18,12 +18,12 @@ public class AucaRegistrationResponse {
 
     @Data
     public static class CourseItem {
-        private String code;
-        private String name;
+        private String courseCode;
+        private String courseName;
         private Integer credits;
         private String day;
         private String startTime;
         private String endTime;
-        private String room;
+        private String roomName;
     }
 }

@@ -136,13 +136,13 @@ public class DashboardService {
 
     private CourseDto toCourseDto(AucaRegistrationResponse.CourseItem item) {
         return CourseDto.builder()
-            .code(item.getCode())
-            .name(item.getName())
+            .code(item.getCourseCode())
+            .name(item.getCourseName())
             .credits(item.getCredits())
             .day(item.getDay())
             .startTime(item.getStartTime())
             .endTime(item.getEndTime())
-            .room(item.getRoom())
+            .room(item.getRoomName())
             .build();
     }
 
