@@ -84,7 +84,6 @@ public class AucaApiClient {
     public AucaBalanceResponse getBalance(String studentId) {
         String url = baseUrl + "/api/v1/finance/student-payments/my-balance";
         HttpHeaders headers = new HttpHeaders();
-        headers.set("x-ims-api-key", apiKey);
         HttpEntity<Void> request = new HttpEntity<>(headers);
         try {
             ResponseEntity<AucaBalanceResponse> response = restTemplate.exchange(
