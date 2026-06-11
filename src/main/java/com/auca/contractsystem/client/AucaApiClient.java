@@ -94,8 +94,8 @@ public class AucaApiClient {
             }
             throw new AucaApiException("Balance not found");
         } catch (Exception e) {
-            log.error("AUCA balance error for {}: {}", studentId, e.getMessage());
-            throw new AucaApiException("Failed to fetch balance from AUCA");
+            log.error("AUCA balance error for {}: {}", studentId, e.getMessage(), e);
+            throw new AucaApiException("Failed to fetch balance from AUCA: " + e.getMessage());
         }
     }
 

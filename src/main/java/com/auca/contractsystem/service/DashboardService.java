@@ -119,7 +119,7 @@ public class DashboardService {
         try {
             return callable.call();
         } catch (Exception e) {
-            log.warn("AUCA {} fetch failed: {}", name, e.getMessage());
+            log.warn("AUCA {} fetch failed: {} - {}", name, e.getClass().getSimpleName(), e.getMessage(), e);
             return null;
         }
     }
