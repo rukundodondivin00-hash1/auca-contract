@@ -5,7 +5,6 @@ import com.auca.contractsystem.dto.admin.AdminInstallmentDto;
 import com.auca.contractsystem.dto.admin.AdminPenaltyDto;
 import com.auca.contractsystem.dto.admin.AdminStudentSummaryDto;
 import com.auca.contractsystem.entity.Contract;
-import com.auca.contractsystem.entity.ContractInstallment;
 import com.auca.contractsystem.service.AdminService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -14,7 +13,6 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 import java.net.URI;
@@ -24,7 +22,7 @@ import java.util.Map;
 @RestController
 @RequestMapping("/api/admin")
 @RequiredArgsConstructor
-@Tag(name = "Admin", description = "Admin management endpoints")
+@Tag(name = "Admin", description = "Admin read-only endpoints")
 public class AdminController {
 
     private final AdminService adminService;
@@ -60,30 +58,6 @@ public class AdminController {
         return ResponseEntity.ok(contracts);
     }
 
-    @PatchMapping("/contracts/{id}/status")
-    @Operation(summary = "Update contract status")
-    public ResponseEntity<?> updateContractStatus(@PathVariable String id, @RequestBody Map<String, String> body) {
-        Contract.ContractStatus status = Contract.ContractStatus.valueOf(body.get("status"));
-        AdminContractDto contract = adminService.updateContractStatus(id, status);
-        return ResponseEntity.ok(contract);
-    }
-
-    @DeleteMapping("/contracts/{id}")
-    @Operation(summary = "Delete contract")
-    public ResponseEntity<?> deleteContract(@PathVariable String id) {
-        adminService.deleteContract(id);
-        return ResponseEntity.ok().build();
-    }
-
-    @PostMapping("/contracts/bulk/status")
-    @Operation(summary = "Bulk update contract status")
-    public ResponseEntity<?> bulkUpdateContractStatus(@RequestBody Map<String, Object> body) {
-        List<String> ids = (List<String>) body.get("contractIds");
-        Contract.ContractStatus status = Contract.ContractStatus.valueOf((String) body.get("status"));
-        List<AdminContractDto> contracts = adminService.bulkUpdateContractStatus(ids, status);
-        return ResponseEntity.ok(contracts);
-    }
-
     @GetMapping("/installments")
     @Operation(summary = "Get all installments with pagination")
     public ResponseEntity<?> getAllInstallments(
@@ -99,21 +73,6 @@ public class AdminController {
     public ResponseEntity<?> getInstallmentsByContract(@PathVariable String contractId) {
         List<AdminInstallmentDto> installments = adminService.getInstallmentsByContract(contractId);
         return ResponseEntity.ok(installments);
-    }
-
-    @PatchMapping("/installments/{id}/status")
-    @Operation(summary = "Update installment status")
-    public ResponseEntity<?> updateInstallmentStatus(@PathVariable String id, @RequestBody Map<String, String> body) {
-        ContractInstallment.InstallmentStatus status = ContractInstallment.InstallmentStatus.valueOf(body.get("status"));
-        AdminInstallmentDto installment = adminService.updateInstallmentStatus(id, status);
-        return ResponseEntity.ok(installment);
-    }
-
-    @PatchMapping("/installments/{id}/waive-penalty")
-    @Operation(summary = "Waive penalty for installment")
-    public ResponseEntity<?> waivePenalty(@PathVariable String id) {
-        AdminInstallmentDto installment = adminService.waivePenalty(id);
-        return ResponseEntity.ok(installment);
     }
 
     @GetMapping("/penalties")
