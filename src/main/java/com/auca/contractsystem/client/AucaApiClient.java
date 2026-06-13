@@ -1,5 +1,8 @@
 package com.auca.contractsystem.client;
 
+import java.io.UnsupportedEncodingException;
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
 import com.auca.contractsystem.dto.*;
 import com.auca.contractsystem.exception.AucaApiException;
 import lombok.RequiredArgsConstructor;
@@ -64,7 +67,13 @@ public class AucaApiClient {
     }
 
     public AucaRegistrationResponse getRegistration(String studentId, String termId) {
-        String url = baseUrl + "/api/v1/registration/registration?studentId=" + studentId + "&termId=" + termId;
+        String encodedTermId = termId;
+        try {
+            encodedTermId = URLEncoder.encode(termId, StandardCharsets.UTF_8.name());
+        } catch (UnsupportedEncodingException e) {
+            log.warn("Failed to encode termId, using raw value: {}", termId);
+        }
+        String url = baseUrl + "/api/v1/registration/registration?studentId=" + studentId + "&termId=" + encodedTermId;
         HttpHeaders headers = new HttpHeaders();
         headers.set("x-ims-api-key", apiKey);
         HttpEntity<Void> request = new HttpEntity<>(headers);
@@ -84,6 +93,7 @@ public class AucaApiClient {
     public AucaBalanceResponse getBalance(String studentId) {
         String url = baseUrl + "/api/v1/finance/student-payments/my-balance";
         HttpHeaders headers = new HttpHeaders();
+        headers.set("x-ims-api-key", apiKey);
         HttpEntity<Void> request = new HttpEntity<>(headers);
         try {
             ResponseEntity<AucaBalanceResponse> response = restTemplate.exchange(
