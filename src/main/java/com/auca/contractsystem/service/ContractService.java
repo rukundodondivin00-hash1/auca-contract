@@ -44,6 +44,13 @@ public class ContractService {
         AucaRegistrationResponse registration = aucaApiClient.getRegistration(studentId, term.getId());
         AucaBalanceResponse balanceResponse = aucaApiClient.getBalance(studentId);
 
+        if (registration == null) {
+            throw new ContractException("No registration found for student " + studentId + " in term " + term.getId() + ". Please register for courses first.");
+        }
+        if (balanceResponse == null) {
+            throw new ContractException("Unable to fetch balance information. Please try again later.");
+        }
+
         BigDecimal balance = balanceResponse.getBalance();
         BigDecimal totalFees = registration.getTotalFee();
         BigDecimal paidAmount = balanceCalculator.calculatePaidAmount(totalFees, balance);
