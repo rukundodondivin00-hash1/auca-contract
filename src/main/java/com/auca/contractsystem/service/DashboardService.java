@@ -72,7 +72,7 @@ public class DashboardService {
         }
 
         FinancialDto financialDto = null;
-        if (registration != null && balanceResponse != null) {
+        if (registration != null && balanceResponse != null && balanceResponse.getBalance() != null) {
             BigDecimal balance = balanceResponse.getBalance();
             BigDecimal totalFees = registration.getTotalFee();
             BigDecimal paidAmount = balanceCalculator.calculatePaidAmount(totalFees, balance);
@@ -86,6 +86,16 @@ public class DashboardService {
                 .remainingBalance(remainingAmount)
                 .paymentPercentage(BigDecimal.valueOf(paidPercentage).setScale(2, RoundingMode.HALF_UP))
                 .isEligibleForContract(eligible)
+                .build();
+        } else if (registration != null) {
+            // Fallback: use registration totalFee without balance data
+            BigDecimal totalFees = registration.getTotalFee();
+            financialDto = FinancialDto.builder()
+                .totalFees(totalFees)
+                .paidAmount(BigDecimal.ZERO)
+                .remainingBalance(totalFees)
+                .paymentPercentage(BigDecimal.ZERO)
+                .isEligibleForContract(false)
                 .build();
         }
 

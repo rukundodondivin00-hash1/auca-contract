@@ -47,12 +47,9 @@ public class ContractService {
         if (registration == null) {
             throw new ContractException("No registration found for student " + studentId + " in term " + term.getId() + ". Please register for courses first.");
         }
-        if (balanceResponse == null) {
-            throw new ContractException("Unable to fetch balance information. Please try again later.");
-        }
 
-        BigDecimal balance = balanceResponse.getBalance();
         BigDecimal totalFees = registration.getTotalFee();
+        BigDecimal balance = balanceResponse != null ? balanceResponse.getBalance() : BigDecimal.ZERO;
         BigDecimal paidAmount = balanceCalculator.calculatePaidAmount(totalFees, balance);
         BigDecimal remainingAmount = balanceCalculator.calculateRemainingAmount(balance);
         Double paidPercentage = balanceCalculator.calculatePaidPercentage(paidAmount, totalFees);
