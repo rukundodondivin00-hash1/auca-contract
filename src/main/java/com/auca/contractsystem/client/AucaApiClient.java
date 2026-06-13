@@ -1,4 +1,4 @@
-﻿package com.auca.contractsystem.client;
+package com.auca.contractsystem.client;
 
 import com.auca.contractsystem.dto.*;
 import com.auca.contractsystem.exception.AucaApiException;
