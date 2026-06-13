@@ -102,10 +102,11 @@ public class AucaApiClient {
             if (response.getStatusCode() == HttpStatus.OK && response.getBody() != null) {
                 return response.getBody();
             }
-            throw new AucaApiException("Balance not found");
+            log.warn("Balance not found for student {}", studentId);
+            return null;
         } catch (Exception e) {
-            log.error("AUCA balance error for {}: {}", studentId, e.getMessage(), e);
-            throw new AucaApiException("Failed to fetch balance from AUCA: " + e.getMessage());
+            log.warn("AUCA balance error for {}: {}", studentId, e.getMessage());
+            return null;
         }
     }
 
