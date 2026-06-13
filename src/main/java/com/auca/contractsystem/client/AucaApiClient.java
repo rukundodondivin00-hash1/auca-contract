@@ -73,7 +73,7 @@ public class AucaApiClient {
         } catch (UnsupportedEncodingException e) {
             log.warn("Failed to encode termId, using raw value: {}", termId);
         }
-        String url = baseUrl + "/api/v1/registration/registration?studentId=" + studentId + "&termId=" + encodedTermId;
+        String url = baseUrl + "/api/v1/registration/registration?termId=" + encodedTermId + "&studentId=" + studentId;
         HttpHeaders headers = new HttpHeaders();
         headers.set("x-ims-api-key", apiKey);
         HttpEntity<Void> request = new HttpEntity<>(headers);
@@ -83,10 +83,11 @@ public class AucaApiClient {
             if (response.getStatusCode() == HttpStatus.OK && response.getBody() != null) {
                 return response.getBody();
             }
-            throw new AucaApiException("Registration not found");
+            log.warn("Registration not found for student {} in term {}", studentId, termId);
+            return null;
         } catch (Exception e) {
-            log.error("AUCA registration error: {}", e.getMessage());
-            throw new AucaApiException("Failed to fetch registration from AUCA");
+            log.warn("AUCA registration error for student {}: {}", studentId, e.getMessage());
+            return null;
         }
     }
 
