@@ -45,7 +45,7 @@ public class AucaApiClient {
         }
     }
 
-public AucaTermResponse getActiveTerm() {
+    public AucaTermResponse getActiveTerm() {
         String url = baseUrl + "/api/v1/registration/term";
         HttpHeaders headers = new HttpHeaders();
         headers.set("x-ims-api-key", apiKey);
@@ -102,7 +102,7 @@ public AucaTermResponse getActiveTerm() {
         }
     }
 
-public AucaStudentDashboardResponse getStudentDashboard(String studentId) {
+    public AucaStudentDashboardResponse getStudentDashboard(String studentId) {
         String url = baseUrl + "/api/v1/common/student/dashboard";
         HttpHeaders headers = new HttpHeaders();
         headers.set("x-ims-api-key", apiKey);
@@ -121,7 +121,7 @@ public AucaStudentDashboardResponse getStudentDashboard(String studentId) {
         }
     }
 
-public AucaTranscriptResponse getTranscript(String studentId) {
+    public AucaTranscriptResponse getTranscript(String studentId) {
         String url = baseUrl + "/api/v1/common/student/transcript?studentId=" + studentId;
         HttpHeaders headers = new HttpHeaders();
         headers.set("x-ims-api-key", apiKey);
