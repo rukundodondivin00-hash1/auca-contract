@@ -105,6 +105,7 @@ public class ContractService {
 
         Contract saved = contractRepository.save(contract);
 
+        java.util.List<ContractInstallment> savedInstallments = new java.util.ArrayList<>();
         for (int i = 0; i < request.getInstallments().size(); i++) {
             InstallmentRequest ir = request.getInstallments().get(i);
             ContractInstallment installment = ContractInstallment.builder()
@@ -116,8 +117,9 @@ public class ContractService {
                 .penaltyAmount(BigDecimal.ZERO)
                 .status(ContractInstallment.InstallmentStatus.PENDING)
                 .build();
-            installmentRepository.save(installment);
+            savedInstallments.add(installmentRepository.save(installment));
         }
+        saved.setInstallments(savedInstallments);
 
         log.info("Contract created successfully for student: {}", studentId);
         return toContractDto(saved);
