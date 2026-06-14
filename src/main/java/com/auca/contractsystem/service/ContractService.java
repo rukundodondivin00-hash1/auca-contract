@@ -52,7 +52,7 @@ public class ContractService {
         boolean hasValidBalance = balanceResponse != null && balanceResponse.getBalance() != null;
         BigDecimal balance = hasValidBalance
             ? balanceResponse.getBalance()
-            : BigDecimal.valueOf(-totalFees.doubleValue()); // Assume owes full amount
+            : BigDecimal.valueOf(-totalFees.doubleValue());
         BigDecimal paidAmount = hasValidBalance
             ? balanceCalculator.calculatePaidAmount(totalFees, balance)
             : BigDecimal.ZERO;
@@ -61,9 +61,8 @@ public class ContractService {
             : totalFees;
         Double paidPercentage = hasValidBalance
             ? balanceCalculator.calculatePaidPercentage(paidAmount, totalFees)
-            : 50.0; // Assume 50% paid for testing (can create contract)
+            : 50.0;
 
-        // Skip eligibility check if balance unavailable (assume eligible for testing)
         if (!hasValidBalance) {
             log.warn("Balance unavailable for student {}, proceeding with estimated values for testing", studentId);
         } else if (!eligibilityChecker.isEligible(balance, paidPercentage)) {
@@ -136,6 +135,23 @@ public class ContractService {
             .totalFees(c.getTotalFees()).balanceAtSigning(c.getBalanceAtSigning())
             .amountPaidAtSigning(c.getAmountPaidAtSigning()).remainingAtSigning(c.getRemainingAtSigning())
             .status(c.getStatus().name()).agreed(c.getAgreed()).agreedDate(c.getAgreedDate())
-            .createdAt(c.getCreatedAt()).build();
+            .createdAt(c.getCreatedAt())
+            .installments(c.getInstallments() != null 
+                ? c.getInstallments().stream().map(this::toInstallmentDto).toList() 
+                : java.util.Collections.emptyList())
+            .build();
+    }
+
+    private InstallmentDto toInstallmentDto(ContractInstallment i) {
+        return InstallmentDto.builder()
+            .id(i.getId())
+            .contractId(i.getContract() != null ? i.getContract().getId() : null)
+            .installmentNumber(i.getInstallmentNumber())
+            .deadlineDate(i.getDeadlineDate() != null ? i.getDeadlineDate().toString() : null)
+            .amountDue(i.getAmountDue())
+            .amountPaid(i.getAmountPaid())
+            .status(i.getStatus().name())
+            .penaltyAmount(i.getPenaltyAmount())
+            .build();
     }
 }

@@ -4,6 +4,7 @@ import lombok.*;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.List;
 
 @Data
 @Builder
@@ -24,4 +25,5 @@ public class ContractDto {
     private Boolean agreed;
     private LocalDate agreedDate;
     private LocalDateTime createdAt;
+    private List<InstallmentDto> installments;
 }
