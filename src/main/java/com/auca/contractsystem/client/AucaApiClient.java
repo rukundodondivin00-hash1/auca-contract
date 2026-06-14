@@ -45,7 +45,7 @@ public class AucaApiClient {
         }
     }
 
-    public AucaTermResponse getActiveTerm() {
+public AucaTermResponse getActiveTerm() {
         String url = baseUrl + "/api/v1/registration/term";
         HttpHeaders headers = new HttpHeaders();
         headers.set("x-ims-api-key", apiKey);
@@ -56,10 +56,11 @@ public class AucaApiClient {
             if (response.getStatusCode() == HttpStatus.OK && response.getBody() != null) {
                 return response.getBody();
             }
-            throw new AucaApiException("Failed to fetch active term");
+            log.warn("Failed to fetch active term, status: {}", response.getStatusCode());
+            return null;
         } catch (Exception e) {
-            log.error("AUCA term error: {}", e.getMessage());
-            throw new AucaApiException("Failed to fetch active term from AUCA");
+            log.warn("AUCA term fetch failed: {}", e.getMessage());
+            return null;
         }
     }
 
@@ -101,7 +102,7 @@ public class AucaApiClient {
         }
     }
 
-    public AucaStudentDashboardResponse getStudentDashboard(String studentId) {
+public AucaStudentDashboardResponse getStudentDashboard(String studentId) {
         String url = baseUrl + "/api/v1/common/student/dashboard";
         HttpHeaders headers = new HttpHeaders();
         headers.set("x-ims-api-key", apiKey);
@@ -112,14 +113,15 @@ public class AucaApiClient {
             if (response.getStatusCode() == HttpStatus.OK && response.getBody() != null) {
                 return response.getBody();
             }
-            throw new AucaApiException("Student dashboard not found");
+            log.warn("Student dashboard not found for student {}", studentId);
+            return null;
         } catch (Exception e) {
-            log.error("AUCA student dashboard error for {}: {}", studentId, e.getMessage());
-            throw new AucaApiException("Failed to fetch student dashboard from AUCA");
+            log.warn("AUCA student dashboard error for {}: {}", studentId, e.getMessage());
+            return null;
         }
     }
 
-    public AucaTranscriptResponse getTranscript(String studentId) {
+public AucaTranscriptResponse getTranscript(String studentId) {
         String url = baseUrl + "/api/v1/common/student/transcript?studentId=" + studentId;
         HttpHeaders headers = new HttpHeaders();
         headers.set("x-ims-api-key", apiKey);
@@ -130,10 +132,11 @@ public class AucaApiClient {
             if (response.getStatusCode() == HttpStatus.OK && response.getBody() != null) {
                 return response.getBody();
             }
-            throw new AucaApiException("Transcript not found");
+            log.warn("Transcript not found for student {}", studentId);
+            return null;
         } catch (Exception e) {
-            log.error("AUCA transcript error for {}: {}", studentId, e.getMessage());
-            throw new AucaApiException("Failed to fetch transcript from AUCA");
+            log.warn("AUCA transcript error for {}: {}", studentId, e.getMessage());
+            return null;
         }
     }
 }
