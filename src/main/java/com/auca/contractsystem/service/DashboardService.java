@@ -169,7 +169,7 @@ public class DashboardService {
     private InstallmentResponseDto toInstallmentResponseDto(ContractInstallment i) {
         return InstallmentResponseDto.builder()
             .id(i.getId())
-            .amount(i.getAmountDue())
+            .amountDue(i.getAmountDue())
             .deadlineDate(i.getDeadlineDate() != null ? i.getDeadlineDate().toString() : null)
             .status(i.getStatus().name())
             .build();

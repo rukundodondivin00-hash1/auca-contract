@@ -12,7 +12,7 @@ import java.math.BigDecimal;
 @NoArgsConstructor
 public class InstallmentResponseDto {
     private String id;
-    private BigDecimal amount;
+    private BigDecimal amountDue;
     private String deadlineDate;
     private String status;
 }

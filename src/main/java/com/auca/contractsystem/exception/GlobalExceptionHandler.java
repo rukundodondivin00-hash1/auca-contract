@@ -29,6 +29,11 @@ public class GlobalExceptionHandler {
         return ResponseEntity.status(HttpStatus.NOT_FOUND).body(ApiResponse.error(e.getMessage()));
     }
 
+    @ExceptionHandler(AuthException.class)
+    public ResponseEntity<ApiResponse<Void>> handleAuth(AuthException e) {
+        return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(ApiResponse.error(e.getMessage()));
+    }
+
     @ExceptionHandler(MethodArgumentNotValidException.class)
     public ResponseEntity<ApiResponse<Void>> handleValidation(MethodArgumentNotValidException e) {
         String errors = e.getBindingResult().getFieldErrors().stream()

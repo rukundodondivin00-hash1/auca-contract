@@ -1,22 +1,16 @@
 package com.auca.contractsystem.service;
 
-import com.auca.contractsystem.dto.admin.AdminContractDto;
-import com.auca.contractsystem.dto.admin.AdminInstallmentDto;
-import com.auca.contractsystem.dto.admin.AdminPenaltyDto;
-import com.auca.contractsystem.dto.admin.AdminStudentSummaryDto;
-import com.auca.contractsystem.entity.Contract;
-import com.auca.contractsystem.entity.ContractInstallment;
-import com.auca.contractsystem.entity.PenaltyHistory;
+import com.auca.contractsystem.dto.*;
+import com.auca.contractsystem.dto.admin.*;
+import com.auca.contractsystem.entity.*;
+import com.auca.contractsystem.exception.AuthException;
 import com.auca.contractsystem.exception.ResourceNotFoundException;
-import com.auca.contractsystem.repository.ContractRepository;
-import com.auca.contractsystem.repository.InstallmentRepository;
-import com.auca.contractsystem.repository.PenaltyRepository;
+import com.auca.contractsystem.security.JwtUtil;
+import com.auca.contractsystem.repository.*;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageRequest;
-import org.springframework.data.domain.Pageable;
-import org.springframework.data.domain.Sort;
+import org.springframework.data.domain.*;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import java.math.BigDecimal;
@@ -31,6 +25,25 @@ public class AdminService {
     private final ContractRepository contractRepository;
     private final InstallmentRepository installmentRepository;
     private final PenaltyRepository penaltyRepository;
+    private final AdminRepository adminRepository;
+    private final JwtUtil jwtUtil;
+    private final PasswordEncoder passwordEncoder;
+
+    public LoginResponse login(String username, String password) {
+        Admin admin = adminRepository.findByUsername(username)
+            .orElseThrow(() -> new AuthException("Invalid admin credentials"));
+        if (!passwordEncoder.matches(password, admin.getPassword())) {
+            throw new AuthException("Invalid admin credentials");
+        }
+        String token = jwtUtil.generateToken(username, admin.getRole());
+        return LoginResponse.builder()
+            .token(token)
+            .username(admin.getUsername())
+            .fullName(admin.getFullName())
+            .email(admin.getEmail())
+            .role(admin.getRole())
+            .build();
+    }
 
     public Page<AdminContractDto> getAllContracts(int page, int size, String sortBy, String direction) {
         Sort sort = direction.equalsIgnoreCase("desc")
@@ -47,14 +60,19 @@ public class AdminService {
         return toAdminContractDto(contract);
     }
 
-    public List<AdminContractDto> getContractsByStudent(String studentId) {
-        return contractRepository.findByStudentId(studentId)
-                .stream().map(this::toAdminContractDto).collect(Collectors.toList());
+    public Page<AdminContractDto> getContractsByStudentPaginated(String studentId, int page, int size) {
+        Pageable pageable = PageRequest.of(page, size);
+        Page<Contract> contractPage = contractRepository.findByStudentId(studentId, pageable);
+        return contractPage.map(this::toAdminContractDto);
     }
 
-    public List<AdminContractDto> getContractsByStatus(Contract.ContractStatus status) {
-        return contractRepository.findByStatus(status)
-                .stream().map(this::toAdminContractDto).collect(Collectors.toList());
+    public Page<AdminContractDto> getContractsByStatusPaginated(Contract.ContractStatus status, int page, int size, String sortBy, String direction) {
+        Sort sort = direction.equalsIgnoreCase("desc")
+                ? Sort.by(sortBy).descending()
+                : Sort.by(sortBy).ascending();
+        Pageable pageable = PageRequest.of(page, size, sort);
+        Page<Contract> contractPage = contractRepository.findByStatus(status, pageable);
+        return contractPage.map(this::toAdminContractDto);
     }
 
     @Transactional

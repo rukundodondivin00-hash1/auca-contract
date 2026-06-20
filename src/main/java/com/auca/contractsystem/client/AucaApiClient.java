@@ -84,9 +84,10 @@ public class AucaApiClient {
     }
 
     public AucaBalanceResponse getBalance(String studentId) {
-        String url = baseUrl + "/api/v1/finance/student-payments/my-balance";
+        String url = baseUrl + "/api/v1/finance/student-payments/my-balance?studentId=" + studentId;
         HttpHeaders headers = new HttpHeaders();
         headers.set("x-ims-api-key", apiKey);
+        headers.set("X-Student-Id", studentId);
         HttpEntity<Void> request = new HttpEntity<>(headers);
         try {
             ResponseEntity<AucaBalanceResponse> response = restTemplate.exchange(
@@ -103,9 +104,10 @@ public class AucaApiClient {
     }
 
     public AucaStudentDashboardResponse getStudentDashboard(String studentId) {
-        String url = baseUrl + "/api/v1/common/student/dashboard";
+        String url = baseUrl + "/api/v1/common/student/dashboard?studentId=" + studentId;
         HttpHeaders headers = new HttpHeaders();
         headers.set("x-ims-api-key", apiKey);
+        headers.set("X-Student-Id", studentId);
         HttpEntity<Void> request = new HttpEntity<>(headers);
         try {
             ResponseEntity<AucaStudentDashboardResponse> response = restTemplate.exchange(

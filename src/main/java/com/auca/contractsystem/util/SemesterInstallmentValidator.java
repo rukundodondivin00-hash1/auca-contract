@@ -4,6 +4,7 @@ import com.auca.contractsystem.exception.ContractException;
 import org.springframework.stereotype.Component;
 import java.time.LocalDate;
 import java.time.Month;
+import java.time.YearMonth;
 import java.util.List;
 
 @Component
@@ -51,7 +52,9 @@ public class SemesterInstallmentValidator {
                     "Installment " + (i + 1) + " deadline must be in year " + deadlineYear + ".");
             }
             
-            LocalDate expectedLastDay = LocalDate.of(deadlineYear, expectedMonth, expectedMonth.length(true));
+            // FIX: Safely calculate the last day of the month, accounting for leap years automatically
+            LocalDate expectedLastDay = YearMonth.of(deadlineYear, expectedMonth).atEndOfMonth();
+            
             if (!deadline.equals(expectedLastDay)) {
                 throw new ContractException(
                     "Installment " + (i + 1) + " deadline must be the last day of " + expectedMonth + " (" + expectedLastDay + ").");

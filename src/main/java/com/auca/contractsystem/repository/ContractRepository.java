@@ -12,7 +12,9 @@ import java.util.Optional;
 public interface ContractRepository extends JpaRepository<Contract, String> {
     Optional<Contract> findByStudentIdAndTermId(String studentId, String termId);
     List<Contract> findByStudentId(String studentId);
+    Page<Contract> findByStudentId(String studentId, Pageable pageable);
     List<Contract> findByStatus(Contract.ContractStatus status);
+    Page<Contract> findByStatus(Contract.ContractStatus status, Pageable pageable);
     List<Contract> findAllByOrderByCreatedAtDesc();
     Page<Contract> findByStudentNameContainingIgnoreCaseOrStudentIdContainingIgnoreCase(String studentName, String studentId, Pageable pageable);
 }
