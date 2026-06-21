@@ -24,7 +24,11 @@ public class PaymentService {
 
     @Transactional
     public void processPayment(String studentId, BigDecimal paymentAmount) {
-        aucaApiClient.sendPaymentToBank(studentId, paymentAmount);
+        try {
+            aucaApiClient.sendPaymentToBank(studentId, paymentAmount);
+        } catch (Exception e) {
+            throw new RuntimeException("BANK_OFFLINE");
+        }
 
         List<Contract> activeContracts = contractRepository.findByStudentIdAndStatus(
             studentId, Contract.ContractStatus.ACTIVE);
@@ -33,7 +37,7 @@ public class PaymentService {
         Contract activeContract = activeContracts.get(0);
 
         List<ContractInstallment> unpaidInstallments = installmentRepository
-            .findByContractIdAndStatusNotOrderByDeadlineDateAsc(activeContract.getId(), ContractInstallment.InstallmentStatus.PAID);
+            .findByContractIdAndStatusInPENDING_OR_PARTIALLY_PAID(activeContract.getId());
 
         BigDecimal remainingPayment = paymentAmount;
 

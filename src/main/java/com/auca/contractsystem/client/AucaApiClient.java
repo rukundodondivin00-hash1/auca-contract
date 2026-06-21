@@ -149,11 +149,6 @@ public class AucaApiClient {
         headers.set("x-ims-api-key", apiKey);
         headers.set("X-Student-Id", studentId);
         HttpEntity<String> entity = new HttpEntity<>(null, headers);
-        try {
-            restTemplate.exchange(url, HttpMethod.POST, entity, String.class);
-            log.info("Payment sent to bank for student {}: {}", studentId, amount);
-        } catch (Exception e) {
-            log.error("Failed to send payment to bank for student {}: {}", studentId, e.getMessage());
-        }
+        restTemplate.exchange(url, HttpMethod.POST, entity, String.class);
     }
 }
