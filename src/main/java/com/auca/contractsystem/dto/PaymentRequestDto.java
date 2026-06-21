@@ -7,5 +7,6 @@ import java.math.BigDecimal;
 public class PaymentRequestDto {
     private BigDecimal amount;
     private String channel;
+    private String feeType;
     private String phoneNumber;
 }
