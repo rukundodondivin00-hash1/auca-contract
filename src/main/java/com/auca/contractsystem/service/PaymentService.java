@@ -27,17 +27,25 @@ public class PaymentService {
         try {
             aucaApiClient.sendPaymentToBank(studentId, paymentAmount);
         } catch (Exception e) {
-            throw new RuntimeException("BANK_OFFLINE");
+            log.error("Bank service unreachable for student {}: {}", studentId, e.getMessage());
+            throw new RuntimeException("BANK_OFFLINE"); 
         }
 
         List<Contract> activeContracts = contractRepository.findByStudentIdAndStatus(
             studentId, Contract.ContractStatus.ACTIVE);
-        if (activeContracts.isEmpty()) return;
+        
+        if (activeContracts.isEmpty()) {
+            log.warn("No ACTIVE contract found for student {}", studentId);
+            return;
+        }
 
         Contract activeContract = activeContracts.get(0);
+        log.info("Processing payment of {} for student {} on contract {}", paymentAmount, studentId, activeContract.getId());
 
         List<ContractInstallment> unpaidInstallments = installmentRepository
             .findByContractIdAndStatusInPENDING_OR_PARTIALLY_PAID(activeContract.getId());
+        
+        log.info("Found {} unpaid installments for contract {}", unpaidInstallments.size(), activeContract.getId());
 
         BigDecimal remainingPayment = paymentAmount;
 
