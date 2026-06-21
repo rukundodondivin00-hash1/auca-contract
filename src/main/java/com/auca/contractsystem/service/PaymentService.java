@@ -55,5 +55,13 @@ public class PaymentService {
             }
             installmentRepository.save(installment);
         }
+
+        List<ContractInstallment> remainingUnpaid = installmentRepository
+            .findByContractIdAndStatusNotOrderByDeadlineDateAsc(activeContract.getId(), ContractInstallment.InstallmentStatus.PAID);
+
+        if (remainingUnpaid.isEmpty()) {
+            activeContract.setStatus(Contract.ContractStatus.COMPLETED);
+            contractRepository.save(activeContract);
+        }
     }
 }
