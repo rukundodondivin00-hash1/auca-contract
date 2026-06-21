@@ -69,6 +69,6 @@ public class ContractInstallment {
     }
 
     public enum InstallmentStatus {
-        PENDING, PAID, OVERDUE
+        PENDING, PAID, PARTIALLY_PAID, OVERDUE
     }
 }

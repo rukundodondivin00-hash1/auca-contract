@@ -8,6 +8,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.*;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestTemplate;
+import java.math.BigDecimal;
 
 @Component
 @RequiredArgsConstructor
@@ -139,6 +140,20 @@ public class AucaApiClient {
         } catch (Exception e) {
             log.warn("AUCA transcript error for {}: {}", studentId, e.getMessage());
             return null;
+        }
+    }
+
+    public void sendPaymentToBank(String studentId, BigDecimal amount) {
+        String url = "http://localhost:8080/api/v1/finance/student-payments/pay?amount=" + amount;
+        HttpHeaders headers = new HttpHeaders();
+        headers.set("x-ims-api-key", apiKey);
+        headers.set("X-Student-Id", studentId);
+        HttpEntity<String> entity = new HttpEntity<>(null, headers);
+        try {
+            restTemplate.exchange(url, HttpMethod.POST, entity, String.class);
+            log.info("Payment sent to bank for student {}: {}", studentId, amount);
+        } catch (Exception e) {
+            log.error("Failed to send payment to bank for student {}: {}", studentId, e.getMessage());
         }
     }
 }

@@ -17,4 +17,5 @@ public interface ContractRepository extends JpaRepository<Contract, String> {
     Page<Contract> findByStatus(Contract.ContractStatus status, Pageable pageable);
     List<Contract> findAllByOrderByCreatedAtDesc();
     Page<Contract> findByStudentNameContainingIgnoreCaseOrStudentIdContainingIgnoreCase(String studentName, String studentId, Pageable pageable);
+    List<Contract> findByStudentIdAndStatus(String studentId, Contract.ContractStatus status);
 }
