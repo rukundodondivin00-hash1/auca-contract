@@ -34,6 +34,15 @@ public class GlobalExceptionHandler {
         return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(ApiResponse.error(e.getMessage()));
     }
 
+    @ExceptionHandler(RuntimeException.class)
+    public ResponseEntity<ApiResponse<Void>> handleRuntime(RuntimeException e) {
+        if ("BANK_OFFLINE".equals(e.getMessage())) {
+            return ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE).body(ApiResponse.error("Bank service is currently unavailable"));
+        }
+        log.error("Unexpected runtime error: {}", e.getMessage(), e);
+        return ResponseEntity.internalServerError().body(ApiResponse.error("An unexpected error occurred"));
+    }
+
     @ExceptionHandler(MethodArgumentNotValidException.class)
     public ResponseEntity<ApiResponse<Void>> handleValidation(MethodArgumentNotValidException e) {
         String errors = e.getBindingResult().getFieldErrors().stream()
