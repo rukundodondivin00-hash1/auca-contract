@@ -4,6 +4,7 @@ import jakarta.persistence.*;
 import lombok.*;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 
 @Entity
 @Table(name = "penalty_history")
@@ -19,6 +20,9 @@ public class PenaltyHistory {
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "installment_id", nullable = false)
+    @JsonIgnore
+    @ToString.Exclude
+    @EqualsAndHashCode.Exclude
     private ContractInstallment installment;
 
     @Column(name = "previous_amount", precision = 15, scale = 2)

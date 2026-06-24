@@ -16,12 +16,8 @@ public class CorsConfig {
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
         
-        // 1. Allow your React frontend URLs
-        // Vite defaults to 5173. Add your production Render URL here later!
-        configuration.setAllowedOrigins(List.of(
-                "http://localhost:5173", 
-                "http://localhost:3000"
-        ));
+        // Allow all origins (using patterns to be compatible with credentials)
+        configuration.setAllowedOriginPatterns(List.of("*"));
         
         // 2. Allow specific HTTP methods
         configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS"));

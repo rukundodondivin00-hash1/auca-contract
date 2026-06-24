@@ -29,13 +29,40 @@ public class AdminService {
     private final JwtUtil jwtUtil;
     private final PasswordEncoder passwordEncoder;
 
-    public LoginResponse login(String username, String password) {
-        Admin admin = adminRepository.findByUsername(username)
+    public LoginResponse login(String usernameOrEmail, String password) {
+        Admin admin = adminRepository.findByUsernameOrEmail(usernameOrEmail, usernameOrEmail)
             .orElseThrow(() -> new AuthException("Invalid admin credentials"));
         if (!passwordEncoder.matches(password, admin.getPassword())) {
             throw new AuthException("Invalid admin credentials");
         }
-        String token = jwtUtil.generateToken(username, admin.getRole());
+        String token = jwtUtil.generateToken(admin.getUsername(), admin.getRole());
+        return LoginResponse.builder()
+            .token(token)
+            .username(admin.getUsername())
+            .fullName(admin.getFullName())
+            .email(admin.getEmail())
+            .role(admin.getRole())
+            .build();
+    }
+
+    @Transactional
+    public LoginResponse signup(AdminSignupRequest request) {
+        if (adminRepository.findByUsername(request.getUsername()).isPresent() ||
+            adminRepository.findByEmail(request.getEmail()).isPresent()) {
+            throw new AuthException("Username or Email already exists");
+        }
+
+        Admin admin = Admin.builder()
+            .username(request.getUsername())
+            .password(passwordEncoder.encode(request.getPassword()))
+            .fullName(request.getFullName())
+            .email(request.getEmail())
+            .role("ROLE_ADMIN")
+            .build();
+
+        adminRepository.save(admin);
+
+        String token = jwtUtil.generateToken(admin.getUsername(), admin.getRole());
         return LoginResponse.builder()
             .token(token)
             .username(admin.getUsername())

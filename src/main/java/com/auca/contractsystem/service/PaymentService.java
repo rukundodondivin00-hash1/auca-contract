@@ -1,6 +1,5 @@
 package com.auca.contractsystem.service;
 
-import com.auca.contractsystem.client.AucaApiClient;
 import com.auca.contractsystem.dto.PaymentResponseDto;
 import com.auca.contractsystem.entity.Contract;
 import com.auca.contractsystem.entity.ContractInstallment;
@@ -21,7 +20,6 @@ import java.util.List;
 @Slf4j
 public class PaymentService {
 
-    private final AucaApiClient aucaApiClient;
     private final ContractRepository contractRepository;
     private final InstallmentRepository installmentRepository;
 
@@ -30,15 +28,11 @@ public class PaymentService {
     @Transactional
     public PaymentResponseDto processPayment(String studentId, BigDecimal paymentAmount) {
         if (paymentAmount == null || paymentAmount.compareTo(MIN_PAYMENT) < 0) {
-            throw new ContractException("Minimum payment amount is 1000 RWF");
+            throw new ContractException("Minimum payment amount is 1,000 RWF");
         }
 
-        try {
-            aucaApiClient.sendPaymentToBank(studentId, paymentAmount);
-        } catch (Exception e) {
-            log.error("Bank service unreachable for student {}: {}", studentId, e.getMessage());
-            throw new RuntimeException("BANK_OFFLINE"); 
-        }
+        // Record payment locally against the student's active contract installments.
+        // No external bank call — payment confirmation is handled by the portal.
 
         List<Contract> activeContracts = contractRepository.findByStudentIdAndStatus(
             studentId, Contract.ContractStatus.ACTIVE);

@@ -84,6 +84,32 @@ public class AucaApiClient {
         }
     }
 
+    /**
+     * Fetch the student's own registration using X-Student-Id header.
+     * Calls the new /my-registration endpoint — no need to know the term ID upfront.
+     */
+    public AucaRegistrationResponse getMyRegistration(String studentId) {
+        String url = baseUrl + "/api/v1/registration/my-registration";
+        HttpHeaders headers = new HttpHeaders();
+        headers.set("x-ims-api-key", apiKey);
+        headers.set("X-Student-Id", studentId);
+        HttpEntity<Void> request = new HttpEntity<>(headers);
+        try {
+            ResponseEntity<AucaRegistrationResponse> response = restTemplate.exchange(
+                url, HttpMethod.GET, request, AucaRegistrationResponse.class);
+            if (response.getStatusCode() == HttpStatus.OK && response.getBody() != null) {
+                return response.getBody();
+            }
+            log.warn("My-registration not found for student {}", studentId);
+            return null;
+        } catch (Exception e) {
+            log.warn("AUCA my-registration error for student {}: {}", studentId, e.getMessage());
+            return null;
+        }
+    }
+
+
+
     public AucaBalanceResponse getBalance(String studentId) {
         String url = baseUrl + "/api/v1/finance/student-payments/my-balance?studentId=" + studentId;
         HttpHeaders headers = new HttpHeaders();

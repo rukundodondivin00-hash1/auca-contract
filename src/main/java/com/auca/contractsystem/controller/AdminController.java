@@ -24,8 +24,16 @@ public class AdminController {
     @PostMapping("/login")
     @Operation(summary = "Admin login with credentials")
     public ResponseEntity<ApiResponse<LoginResponse>> login(@Valid @RequestBody LoginRequest request) {
+        // Here username is treated as email since frontend will send email in the username field
         LoginResponse response = adminService.login(request.getUsername(), request.getPassword());
         return ResponseEntity.ok(ApiResponse.success("Admin login successful", response));
+    }
+
+    @PostMapping("/signup")
+    @Operation(summary = "Admin signup")
+    public ResponseEntity<ApiResponse<LoginResponse>> signup(@Valid @RequestBody AdminSignupRequest request) {
+        LoginResponse response = adminService.signup(request);
+        return ResponseEntity.ok(ApiResponse.success("Admin signup successful", response));
     }
 
     @GetMapping("/contracts")
