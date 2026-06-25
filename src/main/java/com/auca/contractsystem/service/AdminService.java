@@ -26,6 +26,7 @@ public class AdminService {
     private final InstallmentRepository installmentRepository;
     private final PenaltyRepository penaltyRepository;
     private final AdminRepository adminRepository;
+    private final PrePaymentRepository prePaymentRepository;
     private final JwtUtil jwtUtil;
     private final PasswordEncoder passwordEncoder;
 
@@ -280,12 +281,8 @@ public class AdminService {
         BigDecimal totalFees = contracts.stream()
                 .map(c -> c.getTotalFees() != null ? c.getTotalFees() : BigDecimal.ZERO)
                 .reduce(BigDecimal.ZERO, BigDecimal::add);
-        BigDecimal totalPaid = contracts.stream()
-                .map(c -> c.getAmountPaidAtSigning() != null ? c.getAmountPaidAtSigning() : BigDecimal.ZERO)
-                .reduce(BigDecimal.ZERO, BigDecimal::add);
-        BigDecimal totalRemaining = contracts.stream()
-                .map(c -> c.getRemainingAtSigning() != null ? c.getRemainingAtSigning() : BigDecimal.ZERO)
-                .reduce(BigDecimal.ZERO, BigDecimal::add);
+        BigDecimal totalPaid = prePaymentRepository.sumAmountByStudentId(studentId);
+        BigDecimal totalRemaining = totalFees.subtract(totalPaid);
         boolean hasActive = contracts.stream().anyMatch(c -> c.getStatus() == Contract.ContractStatus.ACTIVE);
 
         Contract first = contracts.get(0);
@@ -300,6 +297,7 @@ public class AdminService {
                 .totalPaidAcrossContracts(totalPaid)
                 .totalRemainingAcrossContracts(totalRemaining)
                 .hasActiveContract(hasActive)
+                .transactions(prePaymentRepository.findByStudentId(studentId))
                 .build();
     }
 }

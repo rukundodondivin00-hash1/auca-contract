@@ -5,7 +5,7 @@ import lombok.Builder;
 import lombok.AllArgsConstructor;
 import lombok.NoArgsConstructor;
 import java.math.BigDecimal;
-
+import java.util.List;
 @Data
 @Builder
 @AllArgsConstructor
@@ -21,4 +21,5 @@ public class AdminStudentSummaryDto {
     private BigDecimal totalPaidAcrossContracts;
     private BigDecimal totalRemainingAcrossContracts;
     private boolean hasActiveContract;
+    private List<com.auca.contractsystem.entity.PrePayment> transactions;
 }
