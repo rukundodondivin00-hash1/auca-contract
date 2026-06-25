@@ -114,7 +114,7 @@ public class ContractService {
             .studentId(studentId)
             .studentName(registration.getStudentName() != null ? registration.getStudentName() : studentId)
             .termId(term.getId())
-            .academicYear(term.getYear())
+            .academicYear(String.valueOf(academicYear))
             .semester(termSemester)
             .totalFees(totalFees)
             .balanceAtSigning(remainingAmount)
