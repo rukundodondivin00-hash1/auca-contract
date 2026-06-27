@@ -22,6 +22,8 @@ public class ContractService {
     private final ContractRepository contractRepository;
     private final InstallmentRepository installmentRepository;
     private final PrePaymentRepository prePaymentRepository;
+    private final TermConfigRepository termConfigRepository;
+    private final PenaltyRepository penaltyRepository;
 
     @Transactional
     public ContractDto createContract(String studentId, ContractRequest request) {
@@ -107,7 +109,7 @@ public class ContractService {
             try { academicYear = Integer.parseInt(term.getYear()); } catch (NumberFormatException ignored) {}
             termSemester = term.getSemester() != null ? term.getSemester() : "1";
         }
-        validateInstallmentDeadlines(termSemester, academicYear, deadlines);
+        validateInstallmentDeadlines(term.getId(), termSemester, academicYear, deadlines);
 
         // ── 7. Build and save the contract ────────────────────────────────────
         Contract contract = Contract.builder()
@@ -147,16 +149,17 @@ public class ContractService {
         return toContractDto(saved);
     }
 
-    private void validateInstallmentDeadlines(String semester, int year, List<LocalDate> deadlines) {
-        int semNum;
-        try { semNum = Integer.parseInt(semester); } catch (NumberFormatException e) { semNum = 1; }
-        // Semester 3 = no contract allowed
-        if (semNum == 3) {
-            throw new ContractException("No contract is allowed for the summer semester (Semester 3).");
-        }
-        int expectedCount = semNum == 1 ? 2 : 3;
+    private void validateInstallmentDeadlines(String termId, String semester, int year, List<LocalDate> deadlines) {
+        int expectedCount = termConfigRepository.findByTermId(termId)
+                .map(TermConfig::getMaxInstallments)
+                .orElseGet(() -> {
+                    int semNum;
+                    try { semNum = Integer.parseInt(semester); } catch (NumberFormatException e) { semNum = 1; }
+                    return semNum == 1 ? 2 : semNum == 2 ? 3 : 1;
+                });
+                
         if (deadlines.size() != expectedCount) {
-            throw new ContractException("Semester " + semNum + " requires exactly " + expectedCount + " installments.");
+            throw new ContractException("This term requires exactly " + expectedCount + " installments.");
         }
     }
 
@@ -190,5 +193,22 @@ public class ContractService {
             .status(i.getStatus().name())
             .penaltyAmount(i.getPenaltyAmount())
             .build();
+    }
+
+    public List<com.auca.contractsystem.dto.admin.AdminPenaltyDto> getStudentPenalties(String studentId) {
+        return penaltyRepository.findByInstallment_Contract_StudentId(studentId)
+            .stream()
+            .map(p -> com.auca.contractsystem.dto.admin.AdminPenaltyDto.builder()
+                .id(p.getId())
+                .installmentId(p.getInstallment() != null ? p.getInstallment().getId() : null)
+                .contractId(p.getInstallment() != null && p.getInstallment().getContract() != null ? p.getInstallment().getContract().getId() : null)
+                .studentName(p.getInstallment() != null && p.getInstallment().getContract() != null ? p.getInstallment().getContract().getStudentName() : null)
+                .previousAmount(p.getPreviousAmount())
+                .penaltyAmount(p.getPenaltyAmount())
+                .newAmount(p.getNewAmount())
+                .reason(p.getReason())
+                .createdAt(p.getCreatedAt())
+                .build())
+            .toList();
     }
 }

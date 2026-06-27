@@ -2,6 +2,7 @@ package com.auca.contractsystem.controller;
 
 import com.auca.contractsystem.dto.*;
 import com.auca.contractsystem.service.ContractService;
+import com.auca.contractsystem.service.TermConfigService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
@@ -18,6 +19,7 @@ import java.util.List;
 public class ContractController {
 
     private final ContractService contractService;
+    private final TermConfigService termConfigService;
 
     @PostMapping
     @Operation(summary = "Create a new contract with installments")
@@ -35,5 +37,27 @@ public class ContractController {
         String studentId = auth.getName();
         List<ContractDto> contracts = contractService.getStudentContracts(studentId);
         return ResponseEntity.ok(ApiResponse.success("Contracts retrieved", contracts));
+    }
+
+    @GetMapping("/my-penalties")
+    @Operation(summary = "Get all penalty history for the authenticated student")
+    public ResponseEntity<ApiResponse<List<com.auca.contractsystem.dto.admin.AdminPenaltyDto>>> getMyPenalties(Authentication auth) {
+        String studentId = auth.getName();
+        List<com.auca.contractsystem.dto.admin.AdminPenaltyDto> penalties = contractService.getStudentPenalties(studentId);
+        return ResponseEntity.ok(ApiResponse.success("Penalties retrieved", penalties));
+    }
+
+    @GetMapping("/term-config")
+    @Operation(summary = "Get all term configurations")
+    public ResponseEntity<List<TermConfigDto>> getAllTermConfigs() {
+        return ResponseEntity.ok(termConfigService.getAllConfigs());
+    }
+
+    @GetMapping("/term-config/{termId}")
+    @Operation(summary = "Get configuration for a specific term")
+    public ResponseEntity<TermConfigDto> getTermConfig(@PathVariable String termId) {
+        return termConfigService.getConfigByTermId(termId)
+            .map(ResponseEntity::ok)
+            .orElse(ResponseEntity.notFound().build());
     }
 }

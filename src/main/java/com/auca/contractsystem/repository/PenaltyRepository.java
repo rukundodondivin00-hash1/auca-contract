@@ -8,4 +8,5 @@ import java.util.List;
 @Repository
 public interface PenaltyRepository extends JpaRepository<PenaltyHistory, String> {
     List<PenaltyHistory> findByInstallmentId(String installmentId);
+    List<PenaltyHistory> findByInstallment_Contract_StudentId(String studentId);
 }

@@ -41,7 +41,7 @@ public class PenaltyScheduler {
                 String studentId = installment.getContract().getStudentId();
                 NotificationMessage msg = NotificationMessage.builder()
                     .title("Penalty Applied")
-                    .message("A 5% penalty has been applied to your installment due to missed deadline.")
+                    .message("A penalty has been applied to your installment due to missed deadline.")
                     .type("PENALTY")
                     .contractId(installment.getContract().getId())
                     .studentId(studentId)
@@ -52,7 +52,7 @@ public class PenaltyScheduler {
                 // Admin Notification
                 NotificationMessage adminMsg = NotificationMessage.builder()
                     .title("Penalty Automatically Applied")
-                    .message("5% penalty applied for student " + studentId + " on contract " + installment.getContract().getId())
+                    .message("Penalty applied for student " + studentId + " on contract " + installment.getContract().getId())
                     .type("PENALTY")
                     .contractId(installment.getContract().getId())
                     .studentId(studentId)
@@ -112,7 +112,7 @@ public class PenaltyScheduler {
             String studentId = installment.getContract().getStudentId();
             NotificationMessage msg = NotificationMessage.builder()
                 .title("Installment Due Tomorrow")
-                .message("CRITICAL: Your installment is due tomorrow. Pay now to avoid a 5% penalty.")
+                .message("CRITICAL: Your installment is due tomorrow. Pay now to avoid a penalty.")
                 .type("WARNING")
                 .contractId(installment.getContract().getId())
                 .studentId(studentId)

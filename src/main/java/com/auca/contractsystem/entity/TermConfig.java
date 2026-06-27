@@ -1,0 +1,37 @@
+package com.auca.contractsystem.entity;
+
+import jakarta.persistence.*;
+import lombok.*;
+import java.math.BigDecimal;
+import java.time.LocalDateTime;
+
+@Entity
+@Table(name = "term_configs")
+@Data
+@NoArgsConstructor
+@AllArgsConstructor
+@Builder
+public class TermConfig {
+
+    @Id
+    @GeneratedValue(strategy = GenerationType.UUID)
+    private String id;
+
+    @Column(name = "term_id", unique = true, nullable = false)
+    private String termId;
+
+    @Column(name = "max_installments", nullable = false)
+    private Integer maxInstallments;
+
+    @Column(name = "penalty_percentage", precision = 5, scale = 2, nullable = false)
+    private BigDecimal penaltyPercentage;
+
+    @Column(name = "updated_at")
+    private LocalDateTime updatedAt;
+
+    @PrePersist
+    @PreUpdate
+    protected void onUpdate() {
+        updatedAt = LocalDateTime.now();
+    }
+}

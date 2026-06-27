@@ -4,6 +4,7 @@ import com.auca.contractsystem.dto.*;
 import com.auca.contractsystem.dto.admin.*;
 import com.auca.contractsystem.entity.Contract;
 import com.auca.contractsystem.service.AdminService;
+import com.auca.contractsystem.service.TermConfigService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
@@ -20,6 +21,7 @@ import java.util.List;
 public class AdminController {
 
     private final AdminService adminService;
+    private final TermConfigService termConfigService;
 
     @PostMapping("/login")
     @Operation(summary = "Admin login with credentials")
@@ -188,5 +190,25 @@ public class AdminController {
     public ResponseEntity<AdminStudentSummaryDto> getStudentSummary(@PathVariable String studentId) {
         AdminStudentSummaryDto summary = adminService.getStudentSummary(studentId);
         return ResponseEntity.ok(summary);
+    }
+
+    @GetMapping("/term-config")
+    @Operation(summary = "Get all term configurations")
+    public ResponseEntity<List<TermConfigDto>> getAllTermConfigs() {
+        return ResponseEntity.ok(termConfigService.getAllConfigs());
+    }
+
+    @GetMapping("/term-config/{termId}")
+    @Operation(summary = "Get configuration for a specific term")
+    public ResponseEntity<TermConfigDto> getTermConfig(@PathVariable String termId) {
+        return termConfigService.getConfigByTermId(termId)
+            .map(ResponseEntity::ok)
+            .orElse(ResponseEntity.notFound().build());
+    }
+
+    @PostMapping("/term-config")
+    @Operation(summary = "Create or update a term configuration")
+    public ResponseEntity<TermConfigDto> saveTermConfig(@Valid @RequestBody TermConfigDto request) {
+        return ResponseEntity.ok(termConfigService.saveOrUpdateConfig(request));
     }
 }

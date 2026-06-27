@@ -20,6 +20,7 @@ public class PenaltyService {
     private final PenaltyRepository penaltyRepository;
     private final ContractRepository contractRepository;
     private final PenaltyCalculator penaltyCalculator;
+    private final TermConfigRepository termConfigRepository;
 
     @Transactional
     public List<ContractInstallment> checkAndApplyPenalties() {
@@ -33,8 +34,13 @@ public class PenaltyService {
             log.info("Applying penalty to installment: {}", installment.getId());
 
             BigDecimal previousAmount = installment.getAmountDue();
-            BigDecimal penalty = penaltyCalculator.calculatePenalty(previousAmount);
-            BigDecimal newAmount = penaltyCalculator.calculateNewAmount(previousAmount, penalty);
+            String termId = installment.getContract().getTermId();
+            BigDecimal penaltyPercentage = termConfigRepository.findByTermId(termId)
+                .map(TermConfig::getPenaltyPercentage)
+                .orElse(new BigDecimal("0.05"));
+
+            BigDecimal penalty = previousAmount.multiply(penaltyPercentage);
+            BigDecimal newAmount = previousAmount.add(penalty);
 
             // Update installment
             installment.setStatus(ContractInstallment.InstallmentStatus.OVERDUE);
@@ -48,7 +54,7 @@ public class PenaltyService {
                 .previousAmount(previousAmount)
                 .penaltyAmount(penalty)
                 .newAmount(newAmount)
-                .reason("Automatic 5% monthly penalty for overdue installment")
+                .reason(String.format("Automatic %.0f%% penalty for overdue installment", penaltyPercentage.multiply(new BigDecimal("100"))))
                 .build();
             penaltyRepository.save(history);
 
