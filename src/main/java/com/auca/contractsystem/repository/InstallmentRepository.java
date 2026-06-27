@@ -13,6 +13,8 @@ public interface InstallmentRepository extends JpaRepository<ContractInstallment
     List<ContractInstallment> findByContractId(String contractId);
     List<ContractInstallment> findByStatusAndDeadlineDateBefore(
         ContractInstallment.InstallmentStatus status, LocalDate date);
+    List<ContractInstallment> findByStatusAndDeadlineDate(
+        ContractInstallment.InstallmentStatus status, LocalDate date);
     List<ContractInstallment> findByContractIdAndStatusNotOrderByDeadlineDateAsc(
         String contractId, ContractInstallment.InstallmentStatus status);
     

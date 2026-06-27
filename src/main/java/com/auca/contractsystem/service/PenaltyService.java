@@ -22,7 +22,7 @@ public class PenaltyService {
     private final PenaltyCalculator penaltyCalculator;
 
     @Transactional
-    public void checkAndApplyPenalties() {
+    public List<ContractInstallment> checkAndApplyPenalties() {
         log.info("Running penalty check...");
         LocalDate today = LocalDate.now();
 
@@ -59,5 +59,6 @@ public class PenaltyService {
         }
 
         log.info("Penalty check completed. Processed {} overdue installments.", overdueInstallments.size());
+        return overdueInstallments;
     }
 }

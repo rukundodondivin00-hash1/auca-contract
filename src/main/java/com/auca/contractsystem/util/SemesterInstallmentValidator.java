@@ -15,9 +15,6 @@ public class SemesterInstallmentValidator {
         
         int expectedCount = getExpectedInstallmentCount(semester);
         if (deadlines.size() != expectedCount) {
-            if (semester == 3) {
-                throw new ContractException("Semester 3 is a short semester (8 weeks starting in June) and does not provide installment payment plans.");
-            }
             throw new ContractException(
                 "Semester " + semester + " requires " + expectedCount + " installments, but " + deadlines.size() + " were provided.");
         }
@@ -33,7 +30,7 @@ public class SemesterInstallmentValidator {
         return switch (semester) {
             case 1 -> 2;
             case 2 -> 3;
-            case 3 -> 0;
+            case 3 -> 1;
             default -> throw new ContractException("Invalid semester: " + semester);
         };
     }
@@ -44,6 +41,7 @@ public class SemesterInstallmentValidator {
         List<Month> expectedMonths = switch (semester) {
             case 1 -> List.of(Month.OCTOBER, Month.NOVEMBER);
             case 2 -> List.of(Month.FEBRUARY, Month.MARCH, Month.APRIL);
+            case 3 -> List.of(Month.JULY);
             default -> throw new ContractException("Invalid semester: " + semester);
         };
 

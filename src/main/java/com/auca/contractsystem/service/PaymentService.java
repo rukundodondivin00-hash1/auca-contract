@@ -14,6 +14,8 @@ import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
+import org.springframework.messaging.simp.SimpMessagingTemplate;
+import com.auca.contractsystem.dto.NotificationMessage;
 
 @Service
 @RequiredArgsConstructor
@@ -22,6 +24,7 @@ public class PaymentService {
 
     private final ContractRepository contractRepository;
     private final InstallmentRepository installmentRepository;
+    private final SimpMessagingTemplate messagingTemplate;
 
     private static final BigDecimal MIN_PAYMENT = new BigDecimal("1000");
 
@@ -89,6 +92,29 @@ public class PaymentService {
         if (remainingUnpaid.isEmpty()) {
             activeContract.setStatus(Contract.ContractStatus.COMPLETED);
             contractRepository.save(activeContract);
+        }
+
+        // Send websocket notifications
+        if (totalPaid.compareTo(BigDecimal.ZERO) > 0) {
+            NotificationMessage studentMsg = NotificationMessage.builder()
+                .title("Payment Received")
+                .message("We have successfully received your payment of " + totalPaid + " RWF.")
+                .type("INFO")
+                .contractId(activeContract.getId())
+                .studentId(studentId)
+                .timestamp(LocalDateTime.now())
+                .build();
+            messagingTemplate.convertAndSend("/topic/notifications/" + studentId, studentMsg);
+            
+            NotificationMessage adminMsg = NotificationMessage.builder()
+                .title("New Payment")
+                .message("Student " + studentId + " paid " + totalPaid + " RWF for contract " + activeContract.getId())
+                .type("INFO")
+                .contractId(activeContract.getId())
+                .studentId(studentId)
+                .timestamp(LocalDateTime.now())
+                .build();
+            messagingTemplate.convertAndSend("/topic/admin/notifications", adminMsg);
         }
 
         return PaymentResponseDto.builder()
