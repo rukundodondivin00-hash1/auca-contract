@@ -37,6 +37,7 @@ public class AdminInstallmentDto {
     private LocalDateTime paidAt;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
+    private String studentId;
     private String studentName;
     private String termId;
 }

@@ -252,6 +252,7 @@ public class AdminService {
                 .paidAt(i.getPaidAt())
                 .createdAt(i.getCreatedAt())
                 .updatedAt(i.getUpdatedAt())
+                .studentId(contract != null ? contract.getStudentId() : null)
                 .studentName(contract != null ? contract.getStudentName() : null)
                 .termId(contract != null ? contract.getTermId() : null)
                 .build();
@@ -264,6 +265,7 @@ public class AdminService {
                 .id(p.getId())
                 .installmentId(installment != null ? installment.getId() : null)
                 .contractId(contract != null ? contract.getId() : null)
+                .studentId(contract != null ? contract.getStudentId() : null)
                 .studentName(contract != null ? contract.getStudentName() : null)
                 .previousAmount(p.getPreviousAmount())
                 .penaltyAmount(p.getPenaltyAmount())

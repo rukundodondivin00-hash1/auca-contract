@@ -15,6 +15,7 @@ public class AdminPenaltyDto {
     private String id;
     private String installmentId;
     private String contractId;
+    private String studentId;
     private String studentName;
     private BigDecimal previousAmount;
     private BigDecimal penaltyAmount;
