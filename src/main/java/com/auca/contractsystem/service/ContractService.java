@@ -147,35 +147,43 @@ public class ContractService {
 
         java.util.List<ContractInstallment> savedInstallments = new java.util.ArrayList<>();
         BigDecimal totalAllocated = BigDecimal.ZERO;
+        // Check if custom amounts were provided and validate their sum
+        BigDecimal sumRequestedAmounts = BigDecimal.ZERO;
+        boolean useRequestedAmounts = false;
+        
+        if (request != null && request.getInstallments() != null && request.getInstallments().size() == requestedInstallments) {
+            for (com.auca.contractsystem.dto.InstallmentRequest reqInst : request.getInstallments()) {
+                if (reqInst.getAmount() != null) {
+                    sumRequestedAmounts = sumRequestedAmounts.add(reqInst.getAmount());
+                }
+            }
+            if (sumRequestedAmounts.compareTo(remainingAmount) == 0) {
+                useRequestedAmounts = true;
+            } else if (sumRequestedAmounts.compareTo(BigDecimal.ZERO) > 0) {
+                throw new ContractException("The sum of your custom installments (" + sumRequestedAmounts + ") does not equal the remaining contract balance (" + remainingAmount + ").");
+            }
+        }
         
         for (int i = 0; i < requestedInstallments; i++) {
             TermInstallmentConfig tic = configInstallments.get(i);
             
-            // If student chose fewer installments, divide remainingAmount equally among them.
-            // Or if they just chose default, follow percentages.
             BigDecimal amountDue;
-            if (i == requestedInstallments - 1) {
-                // Last installment gets the remainder
-                amountDue = remainingAmount.subtract(totalAllocated);
+            if (useRequestedAmounts && request.getInstallments().get(i).getAmount() != null) {
+                amountDue = request.getInstallments().get(i).getAmount();
             } else {
-                if (requestedInstallments < configInstallments.size()) {
-                    // Divide equally if fewer installments
-                    amountDue = remainingAmount.divide(BigDecimal.valueOf(requestedInstallments), 0, java.math.RoundingMode.HALF_UP);
+                if (i == requestedInstallments - 1) {
+                    amountDue = remainingAmount.subtract(totalAllocated);
                 } else {
-                    // Use configured percentage of TOTAL fees
-                    amountDue = totalFees.multiply(tic.getPercentage())
-                        .divide(new BigDecimal("100"), 0, java.math.RoundingMode.HALF_UP);
-                    
-                    // Cap it to whatever is left to allocate
-                    BigDecimal leftToAllocate = remainingAmount.subtract(totalAllocated);
-                    if (amountDue.compareTo(leftToAllocate) > 0) {
-                        amountDue = leftToAllocate;
+                    if (requestedInstallments < configInstallments.size()) {
+                        amountDue = remainingAmount.divide(BigDecimal.valueOf(requestedInstallments), 0, java.math.RoundingMode.HALF_UP);
+                    } else {
+                        amountDue = totalFees.multiply(tic.getPercentage()).divide(new BigDecimal("100"), 0, java.math.RoundingMode.HALF_UP);
+                        BigDecimal leftToAllocate = remainingAmount.subtract(totalAllocated);
+                        if (amountDue.compareTo(leftToAllocate) > 0) amountDue = leftToAllocate;
+                        if (amountDue.compareTo(BigDecimal.ZERO) < 0) amountDue = BigDecimal.ZERO;
                     }
-                    if (amountDue.compareTo(BigDecimal.ZERO) < 0) {
-                        amountDue = BigDecimal.ZERO;
-                    }
+                    totalAllocated = totalAllocated.add(amountDue);
                 }
-                totalAllocated = totalAllocated.add(amountDue);
             }
             
             ContractInstallment installment = ContractInstallment.builder()
