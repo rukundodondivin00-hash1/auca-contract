@@ -82,22 +82,16 @@ public class ContractService {
             throw new ContractException("Your fees are fully paid. No contract is needed.");
         }
 
-        // ── 5. Validate installment total matches remaining balance ────────────
-        BigDecimal installmentTotal = request.getInstallments().stream()
-            .map(InstallmentRequest::getAmount)
-            .reduce(BigDecimal.ZERO, BigDecimal::add);
-
-        if (installmentTotal.compareTo(remainingAmount) != 0) {
-            throw new ContractException(
-                "Total installment amounts (" + installmentTotal.toPlainString() +
-                ") must equal your remaining balance (" + remainingAmount.toPlainString() + " RWF).");
+        // ── 5. Get Installments from TermConfig ────────────
+        TermConfig termConfig = termConfigRepository.findByTermId(term.getId())
+            .orElseThrow(() -> new ContractException("No contract configuration found for this term."));
+            
+        List<TermInstallmentConfig> configInstallments = termConfig.getInstallments();
+        if (configInstallments == null || configInstallments.isEmpty()) {
+            throw new ContractException("Term configuration has no installments set. Please contact the registrar.");
         }
-
-        // ── 6. Validate installment deadlines for this semester ───────────────
-        List<LocalDate> deadlines = request.getInstallments().stream()
-            .map(InstallmentRequest::getDeadlineDate)
-            .toList();
-        // Parse year/semester from termId ("2025/1") since IMS may not return separate fields
+        
+        // Parse year/semester from termId
         String rawTermId = term.getId() != null ? term.getId() : "";
         int academicYear = java.time.Year.now().getValue();
         String termSemester = "1";
@@ -109,7 +103,6 @@ public class ContractService {
             try { academicYear = Integer.parseInt(term.getYear()); } catch (NumberFormatException ignored) {}
             termSemester = term.getSemester() != null ? term.getSemester() : "1";
         }
-        validateInstallmentDeadlines(term.getId(), termSemester, academicYear, deadlines);
 
         // ── 7. Build and save the contract ────────────────────────────────────
         Contract contract = Contract.builder()
@@ -130,13 +123,27 @@ public class ContractService {
         Contract saved = contractRepository.save(contract);
 
         java.util.List<ContractInstallment> savedInstallments = new java.util.ArrayList<>();
-        for (int i = 0; i < request.getInstallments().size(); i++) {
-            InstallmentRequest ir = request.getInstallments().get(i);
+        BigDecimal totalAllocated = BigDecimal.ZERO;
+        
+        for (int i = 0; i < configInstallments.size(); i++) {
+            TermInstallmentConfig tic = configInstallments.get(i);
+            
+            // Calculate amount: (percentage / 100) * remainingAmount
+            BigDecimal amountDue;
+            if (i == configInstallments.size() - 1) {
+                // Last installment gets the remainder to avoid rounding issues
+                amountDue = remainingAmount.subtract(totalAllocated);
+            } else {
+                amountDue = remainingAmount.multiply(tic.getPercentage())
+                    .divide(new BigDecimal("100"), 0, java.math.RoundingMode.HALF_UP);
+                totalAllocated = totalAllocated.add(amountDue);
+            }
+            
             ContractInstallment installment = ContractInstallment.builder()
                 .contract(saved)
-                .installmentNumber(i + 1)
-                .deadlineDate(ir.getDeadlineDate())
-                .amountDue(ir.getAmount())
+                .installmentNumber(tic.getInstallmentNumber())
+                .deadlineDate(tic.getDeadlineDate())
+                .amountDue(amountDue)
                 .amountPaid(BigDecimal.ZERO)
                 .penaltyAmount(BigDecimal.ZERO)
                 .status(ContractInstallment.InstallmentStatus.PENDING)
@@ -149,19 +156,7 @@ public class ContractService {
         return toContractDto(saved);
     }
 
-    private void validateInstallmentDeadlines(String termId, String semester, int year, List<LocalDate> deadlines) {
-        int expectedCount = termConfigRepository.findByTermId(termId)
-                .map(TermConfig::getMaxInstallments)
-                .orElseGet(() -> {
-                    int semNum;
-                    try { semNum = Integer.parseInt(semester); } catch (NumberFormatException e) { semNum = 1; }
-                    return semNum == 1 ? 2 : semNum == 2 ? 3 : 1;
-                });
-                
-        if (deadlines.size() != expectedCount) {
-            throw new ContractException("This term requires exactly " + expectedCount + " installments.");
-        }
-    }
+
 
     public List<ContractDto> getStudentContracts(String studentId) {
         return contractRepository.findByStudentId(studentId)
@@ -195,10 +190,10 @@ public class ContractService {
             .build();
     }
 
-    public List<com.auca.contractsystem.dto.admin.AdminPenaltyDto> getStudentPenalties(String studentId) {
+    public List<com.auca.contractsystem.dto.staff.StaffPenaltyDto> getStudentPenalties(String studentId) {
         return penaltyRepository.findByInstallment_Contract_StudentId(studentId)
             .stream()
-            .map(p -> com.auca.contractsystem.dto.admin.AdminPenaltyDto.builder()
+            .map(p -> com.auca.contractsystem.dto.staff.StaffPenaltyDto.builder()
                 .id(p.getId())
                 .installmentId(p.getInstallment() != null ? p.getInstallment().getId() : null)
                 .contractId(p.getInstallment() != null && p.getInstallment().getContract() != null ? p.getInstallment().getContract().getId() : null)

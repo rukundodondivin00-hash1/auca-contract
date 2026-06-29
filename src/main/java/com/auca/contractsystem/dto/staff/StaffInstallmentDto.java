@@ -1,4 +1,4 @@
-package com.auca.contractsystem.dto.admin;
+package com.auca.contractsystem.dto.staff;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.Data;
@@ -13,7 +13,7 @@ import java.time.LocalDateTime;
 @Builder
 @AllArgsConstructor
 @NoArgsConstructor
-public class AdminInstallmentDto {
+public class StaffInstallmentDto {
     
     private String id;
     private String contractId;

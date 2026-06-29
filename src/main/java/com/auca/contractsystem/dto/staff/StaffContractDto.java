@@ -1,4 +1,4 @@
-package com.auca.contractsystem.dto.admin;
+package com.auca.contractsystem.dto.staff;
 
 import lombok.Data;
 import lombok.Builder;
@@ -12,7 +12,7 @@ import java.time.LocalDateTime;
 @Builder
 @AllArgsConstructor
 @NoArgsConstructor
-public class AdminContractDto {
+public class StaffContractDto {
     private String id;
     private String studentId;
     private String studentName;

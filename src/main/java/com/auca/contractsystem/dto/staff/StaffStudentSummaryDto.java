@@ -1,4 +1,4 @@
-package com.auca.contractsystem.dto.admin;
+package com.auca.contractsystem.dto.staff;
 
 import lombok.Data;
 import lombok.Builder;
@@ -10,7 +10,7 @@ import java.util.List;
 @Builder
 @AllArgsConstructor
 @NoArgsConstructor
-public class AdminStudentSummaryDto {
+public class StaffStudentSummaryDto {
     private String studentId;
     private String studentName;
     private String department;

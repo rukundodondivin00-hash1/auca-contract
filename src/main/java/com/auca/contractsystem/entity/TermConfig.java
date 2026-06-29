@@ -4,6 +4,8 @@ import jakarta.persistence.*;
 import lombok.*;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
 
 @Entity
 @Table(name = "term_configs")
@@ -20,8 +22,9 @@ public class TermConfig {
     @Column(name = "term_id", unique = true, nullable = false)
     private String termId;
 
-    @Column(name = "max_installments", nullable = false)
-    private Integer maxInstallments;
+    @OneToMany(mappedBy = "termConfig", cascade = CascadeType.ALL, orphanRemoval = true)
+    @Builder.Default
+    private List<TermInstallmentConfig> installments = new ArrayList<>();
 
     @Column(name = "penalty_percentage", precision = 5, scale = 2, nullable = false)
     private BigDecimal penaltyPercentage;

@@ -6,6 +6,8 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 import java.math.BigDecimal;
 import jakarta.validation.constraints.NotNull;
+import java.util.ArrayList;
+import java.util.List;
 
 @Data
 @Builder
@@ -17,8 +19,8 @@ public class TermConfigDto {
     @NotNull(message = "Term ID is required")
     private String termId;
     
-    @NotNull(message = "Max installments is required")
-    private Integer maxInstallments;
+    @Builder.Default
+    private List<TermInstallmentConfigDto> installments = new ArrayList<>();
     
     @NotNull(message = "Penalty percentage is required")
     private BigDecimal penaltyPercentage;

@@ -5,7 +5,7 @@ import jakarta.validation.constraints.NotBlank;
 import lombok.Data;
 
 @Data
-public class AdminSignupRequest {
+public class StaffSignupRequest {
     @NotBlank(message = "Username is required")
     private String username;
 

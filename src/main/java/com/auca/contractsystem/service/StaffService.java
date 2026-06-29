@@ -1,7 +1,7 @@
 package com.auca.contractsystem.service;
 
 import com.auca.contractsystem.dto.*;
-import com.auca.contractsystem.dto.admin.*;
+import com.auca.contractsystem.dto.staff.*;
 import com.auca.contractsystem.entity.*;
 import com.auca.contractsystem.exception.AuthException;
 import com.auca.contractsystem.exception.ResourceNotFoundException;
@@ -20,96 +20,92 @@ import java.util.stream.Collectors;
 @Service
 @RequiredArgsConstructor
 @Slf4j
-public class AdminService {
+public class StaffService {
 
     private final ContractRepository contractRepository;
     private final InstallmentRepository installmentRepository;
     private final PenaltyRepository penaltyRepository;
-    private final AdminRepository adminRepository;
+    private final UserRepository userRepository;
     private final PrePaymentRepository prePaymentRepository;
     private final JwtUtil jwtUtil;
     private final PasswordEncoder passwordEncoder;
 
     public LoginResponse login(String usernameOrEmail, String password) {
-        Admin admin = adminRepository.findByUsernameOrEmail(usernameOrEmail, usernameOrEmail)
-            .orElseThrow(() -> new AuthException("Invalid admin credentials"));
-        if (!passwordEncoder.matches(password, admin.getPassword())) {
-            throw new AuthException("Invalid admin credentials");
+        User user = userRepository.findByEmail(usernameOrEmail)
+            .orElseThrow(() -> new AuthException("Invalid staff credentials"));
+        if (!password.equals(user.getPassword()) && !passwordEncoder.matches(password, user.getPassword())) {
+            throw new AuthException("Invalid staff credentials");
         }
-        String token = jwtUtil.generateToken(admin.getUsername(), admin.getRole());
+        String role = user.getRole();
+        String token = jwtUtil.generateToken(user.getEmail(), role);
         return LoginResponse.builder()
             .token(token)
-            .username(admin.getUsername())
-            .fullName(admin.getFullName())
-            .email(admin.getEmail())
-            .role(admin.getRole())
+            .username(user.getEmail())
+            .fullName(user.getFullName())
+            .email(user.getEmail())
+            .role(role)
             .build();
     }
 
     @Transactional
-    public LoginResponse signup(AdminSignupRequest request) {
-        if (adminRepository.findByUsername(request.getUsername()).isPresent() ||
-            adminRepository.findByEmail(request.getEmail()).isPresent()) {
-            throw new AuthException("Username or Email already exists");
+    public LoginResponse signup(StaffSignupRequest request) {
+        if (userRepository.findByEmail(request.getEmail()).isPresent()) {
+            throw new AuthException("Email already exists");
         }
-
-        Admin admin = Admin.builder()
-            .username(request.getUsername())
-            .password(passwordEncoder.encode(request.getPassword()))
-            .fullName(request.getFullName())
+        User user = User.builder()
             .email(request.getEmail())
-            .role("ROLE_ADMIN")
+            .password(request.getPassword())
+            .fullName(request.getFullName())
+            .role("ADMIN")
             .build();
-
-        adminRepository.save(admin);
-
-        String token = jwtUtil.generateToken(admin.getUsername(), admin.getRole());
+        userRepository.save(user);
+        String token = jwtUtil.generateToken(user.getEmail(), user.getRole());
         return LoginResponse.builder()
             .token(token)
-            .username(admin.getUsername())
-            .fullName(admin.getFullName())
-            .email(admin.getEmail())
-            .role(admin.getRole())
+            .username(user.getEmail())
+            .fullName(user.getFullName())
+            .email(user.getEmail())
+            .role(user.getRole())
             .build();
     }
 
-    public Page<AdminContractDto> getAllContracts(int page, int size, String sortBy, String direction) {
+    public Page<StaffContractDto> getAllContracts(int page, int size, String sortBy, String direction) {
         Sort sort = direction.equalsIgnoreCase("desc")
                 ? Sort.by(sortBy).descending()
                 : Sort.by(sortBy).ascending();
         Pageable pageable = PageRequest.of(page, size, sort);
         Page<Contract> contractPage = contractRepository.findAll(pageable);
-        return contractPage.map(this::toAdminContractDto);
+        return contractPage.map(this::toStaffContractDto);
     }
 
-    public AdminContractDto getContractById(String id) {
+    public StaffContractDto getContractById(String id) {
         Contract contract = contractRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Contract not found: " + id));
-        return toAdminContractDto(contract);
+        return toStaffContractDto(contract);
     }
 
-    public Page<AdminContractDto> getContractsByStudentPaginated(String studentId, int page, int size) {
+    public Page<StaffContractDto> getContractsByStudentPaginated(String studentId, int page, int size) {
         Pageable pageable = PageRequest.of(page, size);
         Page<Contract> contractPage = contractRepository.findByStudentId(studentId, pageable);
-        return contractPage.map(this::toAdminContractDto);
+        return contractPage.map(this::toStaffContractDto);
     }
 
-    public Page<AdminContractDto> getContractsByStatusPaginated(Contract.ContractStatus status, int page, int size, String sortBy, String direction) {
+    public Page<StaffContractDto> getContractsByStatusPaginated(Contract.ContractStatus status, int page, int size, String sortBy, String direction) {
         Sort sort = direction.equalsIgnoreCase("desc")
                 ? Sort.by(sortBy).descending()
                 : Sort.by(sortBy).ascending();
         Pageable pageable = PageRequest.of(page, size, sort);
         Page<Contract> contractPage = contractRepository.findByStatus(status, pageable);
-        return contractPage.map(this::toAdminContractDto);
+        return contractPage.map(this::toStaffContractDto);
     }
 
     @Transactional
-    public AdminContractDto updateContractStatus(String id, Contract.ContractStatus status) {
+    public StaffContractDto updateContractStatus(String id, Contract.ContractStatus status) {
         Contract contract = contractRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Contract not found: " + id));
         contract.setStatus(status);
         Contract saved = contractRepository.save(contract);
-        return toAdminContractDto(saved);
+        return toStaffContractDto(saved);
     }
 
     @Transactional
@@ -119,22 +115,22 @@ public class AdminService {
         contractRepository.delete(contract);
     }
 
-    public Page<AdminInstallmentDto> getAllInstallments(int page, int size, String sortBy, String direction) {
+    public Page<StaffInstallmentDto> getAllInstallments(int page, int size, String sortBy, String direction) {
         Sort sort = direction.equalsIgnoreCase("desc")
                 ? Sort.by(sortBy).descending()
                 : Sort.by(sortBy).ascending();
         Pageable pageable = PageRequest.of(page, size, sort);
         Page<ContractInstallment> installmentPage = installmentRepository.findAll(pageable);
-        return installmentPage.map(this::toAdminInstallmentDto);
+        return installmentPage.map(this::toStaffInstallmentDto);
     }
 
-    public List<AdminInstallmentDto> getInstallmentsByContract(String contractId) {
+    public List<StaffInstallmentDto> getInstallmentsByContract(String contractId) {
         return installmentRepository.findByContractId(contractId)
-                .stream().map(this::toAdminInstallmentDto).collect(Collectors.toList());
+                .stream().map(this::toStaffInstallmentDto).collect(Collectors.toList());
     }
 
     @Transactional
-    public AdminInstallmentDto updateInstallmentStatus(String id, ContractInstallment.InstallmentStatus status) {
+    public StaffInstallmentDto updateInstallmentStatus(String id, ContractInstallment.InstallmentStatus status) {
         ContractInstallment installment = installmentRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Installment not found: " + id));
         installment.setStatus(status);
@@ -142,11 +138,11 @@ public class AdminService {
             installment.setPaidAt(java.time.LocalDateTime.now());
         }
         ContractInstallment saved = installmentRepository.save(installment);
-        return toAdminInstallmentDto(saved);
+        return toStaffInstallmentDto(saved);
     }
 
     @Transactional
-    public AdminInstallmentDto waivePenalty(String id) {
+    public StaffInstallmentDto waivePenalty(String id) {
         ContractInstallment installment = installmentRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Installment not found: " + id));
         BigDecimal currentPenalty = installment.getPenaltyAmount();
@@ -154,32 +150,32 @@ public class AdminService {
             installment.setPenaltyAmount(BigDecimal.ZERO);
             installmentRepository.save(installment);
         }
-        return toAdminInstallmentDto(installment);
+        return toStaffInstallmentDto(installment);
     }
 
-    public Page<AdminPenaltyDto> getAllPenaltyHistory(int page, int size, String sortBy, String direction) {
+    public Page<StaffPenaltyDto> getAllPenaltyHistory(int page, int size, String sortBy, String direction) {
         Sort sort = direction.equalsIgnoreCase("desc")
                 ? Sort.by(sortBy).descending()
                 : Sort.by(sortBy).ascending();
         Pageable pageable = PageRequest.of(page, size, sort);
         Page<PenaltyHistory> penaltyPage = penaltyRepository.findAll(pageable);
-        return penaltyPage.map(this::toAdminPenaltyDto);
+        return penaltyPage.map(this::toStaffPenaltyDto);
     }
 
-    public List<AdminPenaltyDto> getPenaltyHistoryByInstallment(String installmentId) {
+    public List<StaffPenaltyDto> getPenaltyHistoryByInstallment(String installmentId) {
         return penaltyRepository.findByInstallmentId(installmentId)
-                .stream().map(this::toAdminPenaltyDto).collect(Collectors.toList());
+                .stream().map(this::toStaffPenaltyDto).collect(Collectors.toList());
     }
 
-    public List<AdminPenaltyDto> getPenaltyHistoryByContract(String contractId) {
+    public List<StaffPenaltyDto> getPenaltyHistoryByContract(String contractId) {
         List<ContractInstallment> installments = installmentRepository.findByContractId(contractId);
         return installments.stream()
                 .flatMap(i -> penaltyRepository.findByInstallmentId(i.getId()).stream())
-                .map(this::toAdminPenaltyDto)
+                .map(this::toStaffPenaltyDto)
                 .collect(Collectors.toList());
     }
 
-    public Page<AdminStudentSummaryDto> searchStudents(int page, int size, String keyword) {
+    public Page<StaffStudentSummaryDto> searchStudents(int page, int size, String keyword) {
         Pageable pageable = PageRequest.of(page, size);
         Page<Contract> contractPage;
         if (keyword == null || keyword.isBlank()) {
@@ -191,7 +187,7 @@ public class AdminService {
         return contractPage.map(this::toStudentSummary);
     }
 
-    public AdminStudentSummaryDto getStudentSummary(String studentId) {
+    public StaffStudentSummaryDto getStudentSummary(String studentId) {
         List<Contract> contracts = contractRepository.findByStudentId(studentId);
         if (contracts.isEmpty()) {
             throw new ResourceNotFoundException("No contracts found for student: " + studentId);
@@ -200,14 +196,14 @@ public class AdminService {
     }
 
     @Transactional
-    public List<AdminContractDto> bulkUpdateContractStatus(List<String> contractIds, Contract.ContractStatus status) {
+    public List<StaffContractDto> bulkUpdateContractStatus(List<String> contractIds, Contract.ContractStatus status) {
         List<Contract> contracts = contractRepository.findAllById(contractIds);
         contracts.forEach(c -> c.setStatus(status));
         contractRepository.saveAll(contracts);
-        return contracts.stream().map(this::toAdminContractDto).collect(Collectors.toList());
+        return contracts.stream().map(this::toStaffContractDto).collect(Collectors.toList());
     }
 
-    private AdminContractDto toAdminContractDto(Contract c) {
+    private StaffContractDto toStaffContractDto(Contract c) {
         List<ContractInstallment> installments = installmentRepository.findByContractId(c.getId());
         BigDecimal totalPaid = installments.stream()
                 .map(i -> i.getAmountPaid() != null ? i.getAmountPaid() : BigDecimal.ZERO)
@@ -216,7 +212,7 @@ public class AdminService {
                 .map(i -> i.getPenaltyAmount() != null ? i.getPenaltyAmount() : BigDecimal.ZERO)
                 .reduce(BigDecimal.ZERO, BigDecimal::add);
 
-        return AdminContractDto.builder()
+        return StaffContractDto.builder()
                 .id(c.getId())
                 .studentId(c.getStudentId())
                 .studentName(c.getStudentName())
@@ -238,9 +234,9 @@ public class AdminService {
                 .build();
     }
 
-    private AdminInstallmentDto toAdminInstallmentDto(ContractInstallment i) {
+    private StaffInstallmentDto toStaffInstallmentDto(ContractInstallment i) {
         Contract contract = i.getContract();
-        return AdminInstallmentDto.builder()
+        return StaffInstallmentDto.builder()
                 .id(i.getId())
                 .contractId(contract != null ? contract.getId() : null)
                 .installmentNumber(i.getInstallmentNumber())
@@ -258,10 +254,10 @@ public class AdminService {
                 .build();
     }
 
-    private AdminPenaltyDto toAdminPenaltyDto(PenaltyHistory p) {
+    private StaffPenaltyDto toStaffPenaltyDto(PenaltyHistory p) {
         ContractInstallment installment = p.getInstallment();
         Contract contract = installment != null ? installment.getContract() : null;
-        return AdminPenaltyDto.builder()
+        return StaffPenaltyDto.builder()
                 .id(p.getId())
                 .installmentId(installment != null ? installment.getId() : null)
                 .contractId(contract != null ? contract.getId() : null)
@@ -275,11 +271,11 @@ public class AdminService {
                 .build();
     }
 
-    private AdminStudentSummaryDto toStudentSummary(Contract contract) {
+    private StaffStudentSummaryDto toStudentSummary(Contract contract) {
         return toStudentSummaryFromContracts(contract.getStudentId(), contractRepository.findByStudentId(contract.getStudentId()));
     }
 
-    private AdminStudentSummaryDto toStudentSummaryFromContracts(String studentId, List<Contract> contracts) {
+    private StaffStudentSummaryDto toStudentSummaryFromContracts(String studentId, List<Contract> contracts) {
         BigDecimal totalFees = contracts.stream()
                 .map(c -> c.getTotalFees() != null ? c.getTotalFees() : BigDecimal.ZERO)
                 .reduce(BigDecimal.ZERO, BigDecimal::add);
@@ -288,7 +284,7 @@ public class AdminService {
         boolean hasActive = contracts.stream().anyMatch(c -> c.getStatus() == Contract.ContractStatus.ACTIVE);
 
         Contract first = contracts.get(0);
-        return AdminStudentSummaryDto.builder()
+        return StaffStudentSummaryDto.builder()
                 .studentId(studentId)
                 .studentName(first.getStudentName())
                 .department(null)

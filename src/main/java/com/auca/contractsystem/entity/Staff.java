@@ -10,7 +10,7 @@ import java.time.LocalDateTime;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class Admin {
+public class Staff {
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
     private String id;

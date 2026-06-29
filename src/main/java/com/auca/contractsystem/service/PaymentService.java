@@ -106,7 +106,7 @@ public class PaymentService {
                 .build();
             messagingTemplate.convertAndSend("/topic/notifications/" + studentId, studentMsg);
             
-            NotificationMessage adminMsg = NotificationMessage.builder()
+            NotificationMessage staffMsg = NotificationMessage.builder()
                 .title("New Payment")
                 .message("Student " + studentId + " paid " + totalPaid + " RWF for contract " + activeContract.getId())
                 .type("INFO")
@@ -114,7 +114,7 @@ public class PaymentService {
                 .studentId(studentId)
                 .timestamp(LocalDateTime.now())
                 .build();
-            messagingTemplate.convertAndSend("/topic/admin/notifications", adminMsg);
+            messagingTemplate.convertAndSend("/topic/staff/notifications", staffMsg);
         }
 
         return PaymentResponseDto.builder()

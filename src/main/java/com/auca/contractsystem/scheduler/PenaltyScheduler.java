@@ -49,8 +49,8 @@ public class PenaltyScheduler {
                     .build();
                 messagingTemplate.convertAndSend("/topic/notifications/" + studentId, msg);
                 
-                // Admin Notification
-                NotificationMessage adminMsg = NotificationMessage.builder()
+                // Staff Notification
+                NotificationMessage staffMsg = NotificationMessage.builder()
                     .title("Penalty Automatically Applied")
                     .message("Penalty applied for student " + studentId + " on contract " + installment.getContract().getId())
                     .type("PENALTY")
@@ -58,7 +58,7 @@ public class PenaltyScheduler {
                     .studentId(studentId)
                     .timestamp(LocalDateTime.now())
                     .build();
-                messagingTemplate.convertAndSend("/topic/admin/notifications", adminMsg);
+                messagingTemplate.convertAndSend("/topic/staff/notifications", staffMsg);
             }
         }
     }

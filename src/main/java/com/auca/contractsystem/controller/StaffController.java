@@ -1,9 +1,9 @@
 package com.auca.contractsystem.controller;
 
 import com.auca.contractsystem.dto.*;
-import com.auca.contractsystem.dto.admin.*;
+import com.auca.contractsystem.dto.staff.*;
 import com.auca.contractsystem.entity.Contract;
-import com.auca.contractsystem.service.AdminService;
+import com.auca.contractsystem.service.StaffService;
 import com.auca.contractsystem.service.TermConfigService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -15,38 +15,36 @@ import org.springframework.web.bind.annotation.*;
 import java.util.List;
 
 @RestController
-@RequestMapping("/api/admin")
+@RequestMapping("/api/staff")
 @RequiredArgsConstructor
-@Tag(name = "Admin", description = "Admin read-only endpoints")
-public class AdminController {
+@Tag(name = "Staff", description = "Endpoints for staff members")
+public class StaffController {
 
-    private final AdminService adminService;
+    private final StaffService staffService;
     private final TermConfigService termConfigService;
 
     @PostMapping("/login")
-    @Operation(summary = "Admin login with credentials")
-    public ResponseEntity<ApiResponse<LoginResponse>> login(@Valid @RequestBody LoginRequest request) {
-        // Here username is treated as email since frontend will send email in the username field
-        LoginResponse response = adminService.login(request.getUsername(), request.getPassword());
-        return ResponseEntity.ok(ApiResponse.success("Admin login successful", response));
+    @Operation(summary = "Staff login")
+    public ResponseEntity<LoginResponse> login(@Valid @RequestBody LoginRequest request) {
+        return ResponseEntity.ok(staffService.login(request.getUsername(), request.getPassword()));
     }
 
     @PostMapping("/signup")
-    @Operation(summary = "Admin signup")
-    public ResponseEntity<ApiResponse<LoginResponse>> signup(@Valid @RequestBody AdminSignupRequest request) {
-        LoginResponse response = adminService.signup(request);
-        return ResponseEntity.ok(ApiResponse.success("Admin signup successful", response));
+    @Operation(summary = "Staff signup")
+    public ResponseEntity<ApiResponse<LoginResponse>> signup(@Valid @RequestBody StaffSignupRequest request) {
+        LoginResponse response = staffService.signup(request);
+        return ResponseEntity.ok(ApiResponse.success("Staff signup successful", response));
     }
 
     @GetMapping("/contracts")
     @Operation(summary = "Get all contracts with pagination")
-    public ResponseEntity<PaginatedResponse<AdminContractDto>> getAllContracts(
+    public ResponseEntity<PaginatedResponse<StaffContractDto>> getAllContracts(
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "20") int size,
             @RequestParam(defaultValue = "createdAt") String sortBy,
             @RequestParam(defaultValue = "desc") String direction) {
-        Page<AdminContractDto> contractPage = adminService.getAllContracts(page, size, sortBy, direction);
-        PaginatedResponse<AdminContractDto> response = PaginatedResponse.<AdminContractDto>builder()
+        Page<StaffContractDto> contractPage = staffService.getAllContracts(page, size, sortBy, direction);
+        PaginatedResponse<StaffContractDto> response = PaginatedResponse.<StaffContractDto>builder()
             .content(contractPage.getContent())
             .totalElements(contractPage.getTotalElements())
             .totalPages(contractPage.getTotalPages())
@@ -60,19 +58,19 @@ public class AdminController {
 
     @GetMapping("/contracts/{id}")
     @Operation(summary = "Get contract by ID")
-    public ResponseEntity<AdminContractDto> getContract(@PathVariable String id) {
-        AdminContractDto contract = adminService.getContractById(id);
+    public ResponseEntity<StaffContractDto> getContract(@PathVariable String id) {
+        StaffContractDto contract = staffService.getContractById(id);
         return ResponseEntity.ok(contract);
     }
 
     @GetMapping("/contracts/student/{studentId}")
     @Operation(summary = "Get contracts by student ID")
-    public ResponseEntity<PaginatedResponse<AdminContractDto>> getContractsByStudent(
+    public ResponseEntity<PaginatedResponse<StaffContractDto>> getContractsByStudent(
             @PathVariable String studentId,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "20") int size) {
-        Page<AdminContractDto> contractPage = adminService.getContractsByStudentPaginated(studentId, page, size);
-        PaginatedResponse<AdminContractDto> response = PaginatedResponse.<AdminContractDto>builder()
+        Page<StaffContractDto> contractPage = staffService.getContractsByStudentPaginated(studentId, page, size);
+        PaginatedResponse<StaffContractDto> response = PaginatedResponse.<StaffContractDto>builder()
             .content(contractPage.getContent())
             .totalElements(contractPage.getTotalElements())
             .totalPages(contractPage.getTotalPages())
@@ -86,14 +84,14 @@ public class AdminController {
 
     @GetMapping("/contracts/status/{status}")
     @Operation(summary = "Get contracts by status")
-    public ResponseEntity<PaginatedResponse<AdminContractDto>> getContractsByStatus(
+    public ResponseEntity<PaginatedResponse<StaffContractDto>> getContractsByStatus(
             @PathVariable Contract.ContractStatus status,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "20") int size,
             @RequestParam(defaultValue = "createdAt") String sortBy,
             @RequestParam(defaultValue = "desc") String direction) {
-        Page<AdminContractDto> contractPage = adminService.getContractsByStatusPaginated(status, page, size, sortBy, direction);
-        PaginatedResponse<AdminContractDto> response = PaginatedResponse.<AdminContractDto>builder()
+        Page<StaffContractDto> contractPage = staffService.getContractsByStatusPaginated(status, page, size, sortBy, direction);
+        PaginatedResponse<StaffContractDto> response = PaginatedResponse.<StaffContractDto>builder()
             .content(contractPage.getContent())
             .totalElements(contractPage.getTotalElements())
             .totalPages(contractPage.getTotalPages())
@@ -107,13 +105,13 @@ public class AdminController {
 
     @GetMapping("/installments")
     @Operation(summary = "Get all installments with pagination")
-    public ResponseEntity<PaginatedResponse<AdminInstallmentDto>> getAllInstallments(
+    public ResponseEntity<PaginatedResponse<StaffInstallmentDto>> getAllInstallments(
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "20") int size,
             @RequestParam(defaultValue = "createdAt") String sortBy,
             @RequestParam(defaultValue = "desc") String direction) {
-        Page<AdminInstallmentDto> installmentPage = adminService.getAllInstallments(page, size, sortBy, direction);
-        PaginatedResponse<AdminInstallmentDto> response = PaginatedResponse.<AdminInstallmentDto>builder()
+        Page<StaffInstallmentDto> installmentPage = staffService.getAllInstallments(page, size, sortBy, direction);
+        PaginatedResponse<StaffInstallmentDto> response = PaginatedResponse.<StaffInstallmentDto>builder()
             .content(installmentPage.getContent())
             .totalElements(installmentPage.getTotalElements())
             .totalPages(installmentPage.getTotalPages())
@@ -127,20 +125,20 @@ public class AdminController {
 
     @GetMapping("/installments/contract/{contractId}")
     @Operation(summary = "Get installments by contract")
-    public ResponseEntity<List<AdminInstallmentDto>> getInstallmentsByContract(@PathVariable String contractId) {
-        List<AdminInstallmentDto> installments = adminService.getInstallmentsByContract(contractId);
+    public ResponseEntity<List<StaffInstallmentDto>> getInstallmentsByContract(@PathVariable String contractId) {
+        List<StaffInstallmentDto> installments = staffService.getInstallmentsByContract(contractId);
         return ResponseEntity.ok(installments);
     }
 
     @GetMapping("/penalties")
     @Operation(summary = "Get all penalty history with pagination")
-    public ResponseEntity<PaginatedResponse<AdminPenaltyDto>> getAllPenaltyHistory(
+    public ResponseEntity<PaginatedResponse<StaffPenaltyDto>> getAllPenaltyHistory(
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "20") int size,
             @RequestParam(defaultValue = "createdAt") String sortBy,
             @RequestParam(defaultValue = "desc") String direction) {
-        Page<AdminPenaltyDto> penaltyPage = adminService.getAllPenaltyHistory(page, size, sortBy, direction);
-        PaginatedResponse<AdminPenaltyDto> response = PaginatedResponse.<AdminPenaltyDto>builder()
+        Page<StaffPenaltyDto> penaltyPage = staffService.getAllPenaltyHistory(page, size, sortBy, direction);
+        PaginatedResponse<StaffPenaltyDto> response = PaginatedResponse.<StaffPenaltyDto>builder()
             .content(penaltyPage.getContent())
             .totalElements(penaltyPage.getTotalElements())
             .totalPages(penaltyPage.getTotalPages())
@@ -154,26 +152,26 @@ public class AdminController {
 
     @GetMapping("/penalties/installment/{installmentId}")
     @Operation(summary = "Get penalty history by installment")
-    public ResponseEntity<List<AdminPenaltyDto>> getPenaltyHistoryByInstallment(@PathVariable String installmentId) {
-        List<AdminPenaltyDto> penalties = adminService.getPenaltyHistoryByInstallment(installmentId);
+    public ResponseEntity<List<StaffPenaltyDto>> getPenaltyHistoryByInstallment(@PathVariable String installmentId) {
+        List<StaffPenaltyDto> penalties = staffService.getPenaltyHistoryByInstallment(installmentId);
         return ResponseEntity.ok(penalties);
     }
 
     @GetMapping("/penalties/contract/{contractId}")
     @Operation(summary = "Get penalty history by contract")
-    public ResponseEntity<List<AdminPenaltyDto>> getPenaltyHistoryByContract(@PathVariable String contractId) {
-        List<AdminPenaltyDto> penalties = adminService.getPenaltyHistoryByContract(contractId);
+    public ResponseEntity<List<StaffPenaltyDto>> getPenaltyHistoryByContract(@PathVariable String contractId) {
+        List<StaffPenaltyDto> penalties = staffService.getPenaltyHistoryByContract(contractId);
         return ResponseEntity.ok(penalties);
     }
 
     @GetMapping("/students")
     @Operation(summary = "Search students with pagination")
-    public ResponseEntity<PaginatedResponse<AdminStudentSummaryDto>> searchStudents(
+    public ResponseEntity<PaginatedResponse<StaffStudentSummaryDto>> searchStudents(
             @RequestParam(defaultValue = "") String keyword,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "20") int size) {
-        Page<AdminStudentSummaryDto> studentPage = adminService.searchStudents(page, size, keyword);
-        PaginatedResponse<AdminStudentSummaryDto> response = PaginatedResponse.<AdminStudentSummaryDto>builder()
+        Page<StaffStudentSummaryDto> studentPage = staffService.searchStudents(page, size, keyword);
+        PaginatedResponse<StaffStudentSummaryDto> response = PaginatedResponse.<StaffStudentSummaryDto>builder()
             .content(studentPage.getContent())
             .totalElements(studentPage.getTotalElements())
             .totalPages(studentPage.getTotalPages())
@@ -187,8 +185,8 @@ public class AdminController {
 
     @GetMapping("/students/{studentId}/summary")
     @Operation(summary = "Get student financial summary")
-    public ResponseEntity<AdminStudentSummaryDto> getStudentSummary(@PathVariable String studentId) {
-        AdminStudentSummaryDto summary = adminService.getStudentSummary(studentId);
+    public ResponseEntity<StaffStudentSummaryDto> getStudentSummary(@PathVariable String studentId) {
+        StaffStudentSummaryDto summary = staffService.getStudentSummary(studentId);
         return ResponseEntity.ok(summary);
     }
 

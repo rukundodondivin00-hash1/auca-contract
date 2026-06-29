@@ -41,9 +41,9 @@ public class ContractController {
 
     @GetMapping("/my-penalties")
     @Operation(summary = "Get all penalty history for the authenticated student")
-    public ResponseEntity<ApiResponse<List<com.auca.contractsystem.dto.admin.AdminPenaltyDto>>> getMyPenalties(Authentication auth) {
+    public ResponseEntity<ApiResponse<List<com.auca.contractsystem.dto.staff.StaffPenaltyDto>>> getMyPenalties(Authentication auth) {
         String studentId = auth.getName();
-        List<com.auca.contractsystem.dto.admin.AdminPenaltyDto> penalties = contractService.getStudentPenalties(studentId);
+        List<com.auca.contractsystem.dto.staff.StaffPenaltyDto> penalties = contractService.getStudentPenalties(studentId);
         return ResponseEntity.ok(ApiResponse.success("Penalties retrieved", penalties));
     }
 

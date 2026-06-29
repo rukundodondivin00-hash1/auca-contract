@@ -1,4 +1,4 @@
-package com.auca.contractsystem.dto.admin;
+package com.auca.contractsystem.dto.staff;
 
 import lombok.*;
 import java.util.List;
