@@ -24,32 +24,35 @@ public class PenaltyScheduler {
     private final InstallmentRepository installmentRepository;
     private final SimpMessagingTemplate messagingTemplate;
 
-    // Runs every minute for testing (was: 0 0 0 * * *)
-    @Scheduled(cron = "0 * * * * *")
+    /**
+     * Daily job at midnight: runs penalty check + sends daily countdown reminders (10 days -> 1 day before).
+     * Cron: 0 0 0 * * *  (midnight every day)
+     * For testing: 0 * * * * * (every minute)
+     */
+    @Scheduled(cron = "0 * * * * *") // Changed to every minute for testing
     public void runDailyPenaltyCheck() {
         log.info("Scheduled penalty check started");
-        
-        // 1. Send reminders for upcoming deadlines
-        sendReminders();
 
-        // 2. Apply penalties for overdue ones
+        // 1. Send countdown reminders (10 days out down to 1 day before)
+        sendCountdownReminders();
+
+        // 2. Apply penalties for overdue installments
         List<ContractInstallment> penalized = penaltyService.checkAndApplyPenalties();
-        
-        // 3. Send notifications for applied penalties
+
+        // 3. Notify students & staff about applied penalties
         if (penalized != null) {
             for (ContractInstallment installment : penalized) {
                 String studentId = installment.getContract().getStudentId();
                 NotificationMessage msg = NotificationMessage.builder()
                     .title("Penalty Applied")
-                    .message("A penalty has been applied to your installment due to missed deadline.")
+                    .message("A penalty has been applied to your installment due to a missed deadline.")
                     .type("PENALTY")
                     .contractId(installment.getContract().getId())
                     .studentId(studentId)
                     .timestamp(LocalDateTime.now())
                     .build();
                 messagingTemplate.convertAndSend("/topic/notifications/" + studentId, msg);
-                
-                // Staff Notification
+
                 NotificationMessage staffMsg = NotificationMessage.builder()
                     .title("Penalty Automatically Applied")
                     .message("Penalty applied for student " + studentId + " on contract " + installment.getContract().getId())
@@ -63,57 +66,76 @@ public class PenaltyScheduler {
         }
     }
 
+    /**
+     * Four urgent reminders on the deadline day itself.
+     * Runs at 7:00, 10:00, 13:00 and 17:00 every day.
+     */
+    @Scheduled(cron = "0 * * * * *") // Changed to every minute for testing
+    public void sendDueTodayReminders() {
+        log.info("Sending due-today reminders ({})", LocalDateTime.now());
+        sendDueTodayNotifications();
+    }
+
+    // ─────────────────────────────────────────────────────────────────────────
+    // Helpers
+    // ─────────────────────────────────────────────────────────────────────────
+
     @Transactional(readOnly = true)
-    protected void sendReminders() {
+    protected void sendCountdownReminders() {
         LocalDate today = LocalDate.now();
-        LocalDate in7Days = today.plusDays(7);
-        LocalDate in3Days = today.plusDays(3);
-        LocalDate in1Day = today.plusDays(1);
 
-        // 7 Days
-        List<ContractInstallment> dueIn7Days = installmentRepository
-            .findByStatusAndDeadlineDate(ContractInstallment.InstallmentStatus.PENDING, in7Days);
-        
-        for (ContractInstallment installment : dueIn7Days) {
-            String studentId = installment.getContract().getStudentId();
-            NotificationMessage msg = NotificationMessage.builder()
-                .title("Upcoming Installment")
-                .message("Reminder: Your installment is due in 7 days.")
-                .type("INFO")
-                .contractId(installment.getContract().getId())
-                .studentId(studentId)
-                .timestamp(LocalDateTime.now())
-                .build();
-            messagingTemplate.convertAndSend("/topic/notifications/" + studentId, msg);
-        }
+        List<ContractInstallment.InstallmentStatus> activeStatuses = List.of(
+            ContractInstallment.InstallmentStatus.PENDING,
+            ContractInstallment.InstallmentStatus.PARTIALLY_PAID
+        );
 
-        // 3 Days
-        List<ContractInstallment> dueIn3Days = installmentRepository
-            .findByStatusAndDeadlineDate(ContractInstallment.InstallmentStatus.PENDING, in3Days);
-        
-        for (ContractInstallment installment : dueIn3Days) {
-            String studentId = installment.getContract().getStudentId();
-            NotificationMessage msg = NotificationMessage.builder()
-                .title("Installment Due Soon")
-                .message("Urgent: Your installment is due in exactly 3 days. Please pay to avoid penalties.")
-                .type("WARNING")
-                .contractId(installment.getContract().getId())
-                .studentId(studentId)
-                .timestamp(LocalDateTime.now())
-                .build();
-            messagingTemplate.convertAndSend("/topic/notifications/" + studentId, msg);
+        // Send a reminder for each of the 10 days leading up to (but not including) the deadline
+        for (int daysLeft = 10; daysLeft >= 1; daysLeft--) {
+            LocalDate targetDate = today.plusDays(daysLeft);
+            List<ContractInstallment> due = installmentRepository
+                .findByStatusInAndDeadlineDate(activeStatuses, targetDate);
+
+            for (ContractInstallment installment : due) {
+                String studentId = installment.getContract().getStudentId();
+                String type   = daysLeft <= 3 ? "WARNING" : "INFO";
+                String title  = daysLeft == 1
+                    ? "Installment Due TOMORROW"
+                    : "Installment Due in " + daysLeft + " Days";
+                String message = daysLeft == 1
+                    ? "Urgent: Your installment payment is due TOMORROW. Pay today to avoid a penalty."
+                    : "Reminder: Your installment payment is due in " + daysLeft + " days. Please prepare your payment.";
+
+                NotificationMessage msg = NotificationMessage.builder()
+                    .title(title)
+                    .message(message)
+                    .type(type)
+                    .contractId(installment.getContract().getId())
+                    .studentId(studentId)
+                    .timestamp(LocalDateTime.now())
+                    .build();
+                messagingTemplate.convertAndSend("/topic/notifications/" + studentId, msg);
+            }
         }
-        
-        // 1 Day
-        List<ContractInstallment> dueIn1Day = installmentRepository
-            .findByStatusAndDeadlineDate(ContractInstallment.InstallmentStatus.PENDING, in1Day);
-        
-        for (ContractInstallment installment : dueIn1Day) {
+    }
+
+    @Transactional(readOnly = true)
+    protected void sendDueTodayNotifications() {
+        LocalDate today = LocalDate.now();
+
+        List<ContractInstallment.InstallmentStatus> activeStatuses = List.of(
+            ContractInstallment.InstallmentStatus.PENDING,
+            ContractInstallment.InstallmentStatus.PARTIALLY_PAID
+        );
+
+        List<ContractInstallment> dueToday = installmentRepository
+            .findByStatusInAndDeadlineDate(activeStatuses, today);
+
+        for (ContractInstallment installment : dueToday) {
             String studentId = installment.getContract().getStudentId();
             NotificationMessage msg = NotificationMessage.builder()
-                .title("Installment Due Tomorrow")
-                .message("CRITICAL: Your installment is due tomorrow. Pay now to avoid a penalty.")
-                .type("WARNING")
+                .title("Installment Due TODAY")
+                .message("CRITICAL: Your installment payment is due TODAY. Pay immediately to avoid a penalty being applied.")
+                .type("PENALTY")
                 .contractId(installment.getContract().getId())
                 .studentId(studentId)
                 .timestamp(LocalDateTime.now())

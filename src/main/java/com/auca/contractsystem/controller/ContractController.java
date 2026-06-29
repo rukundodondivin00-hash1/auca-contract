@@ -8,8 +8,10 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
+import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
+import java.time.LocalDateTime;
 import java.util.List;
 
 @RestController
@@ -20,6 +22,7 @@ public class ContractController {
 
     private final ContractService contractService;
     private final TermConfigService termConfigService;
+    private final SimpMessagingTemplate messagingTemplate;
 
     @PostMapping
     @Operation(summary = "Create a new contract with installments")
@@ -28,6 +31,18 @@ public class ContractController {
             @Valid @RequestBody ContractRequest request) {
         String studentId = auth.getName();
         ContractDto contract = contractService.createContract(studentId, request);
+
+        // Notify staff that a new contract has been signed
+        NotificationMessage staffMsg = NotificationMessage.builder()
+            .title("New Contract Signed")
+            .message("Student " + studentId + " has signed a new payment contract (ID: " + contract.getId() + ").")
+            .type("INFO")
+            .contractId(contract.getId())
+            .studentId(studentId)
+            .timestamp(LocalDateTime.now())
+            .build();
+        messagingTemplate.convertAndSend("/topic/staff/notifications", staffMsg);
+
         return ResponseEntity.ok(ApiResponse.success("Contract created successfully", contract));
     }
 

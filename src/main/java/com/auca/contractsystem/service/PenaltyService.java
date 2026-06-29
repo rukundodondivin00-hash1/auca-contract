@@ -28,18 +28,24 @@ public class PenaltyService {
         LocalDate today = LocalDate.now();
 
         List<ContractInstallment> overdueInstallments = installmentRepository
-            .findByStatusAndDeadlineDateBefore(ContractInstallment.InstallmentStatus.PENDING, today);
+            .findByStatusInAndDeadlineDateBefore(
+                List.of(ContractInstallment.InstallmentStatus.PENDING, ContractInstallment.InstallmentStatus.PARTIALLY_PAID), 
+                today
+            );
 
         for (ContractInstallment installment : overdueInstallments) {
             log.info("Applying penalty to installment: {}", installment.getId());
 
             BigDecimal previousAmount = installment.getAmountDue();
+            BigDecimal amountPaid = installment.getAmountPaid() != null ? installment.getAmountPaid() : BigDecimal.ZERO;
+            BigDecimal unpaidBalance = previousAmount.subtract(amountPaid);
+
             String termId = installment.getContract().getTermId();
             BigDecimal penaltyPercentage = termConfigRepository.findByTermId(termId)
                 .map(TermConfig::getPenaltyPercentage)
                 .orElse(new BigDecimal("0.05"));
 
-            BigDecimal penalty = previousAmount.multiply(penaltyPercentage);
+            BigDecimal penalty = unpaidBalance.multiply(penaltyPercentage);
             BigDecimal newAmount = previousAmount.add(penalty);
 
             // Update installment

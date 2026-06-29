@@ -11,10 +11,10 @@ import java.util.List;
 @Repository
 public interface InstallmentRepository extends JpaRepository<ContractInstallment, String> {
     List<ContractInstallment> findByContractId(String contractId);
-    List<ContractInstallment> findByStatusAndDeadlineDateBefore(
-        ContractInstallment.InstallmentStatus status, LocalDate date);
-    List<ContractInstallment> findByStatusAndDeadlineDate(
-        ContractInstallment.InstallmentStatus status, LocalDate date);
+    List<ContractInstallment> findByStatusInAndDeadlineDateBefore(
+        List<ContractInstallment.InstallmentStatus> statuses, LocalDate date);
+    List<ContractInstallment> findByStatusInAndDeadlineDate(
+        List<ContractInstallment.InstallmentStatus> statuses, LocalDate date);
     List<ContractInstallment> findByContractIdAndStatusNotOrderByDeadlineDateAsc(
         String contractId, ContractInstallment.InstallmentStatus status);
     
