@@ -24,4 +24,8 @@ public class TermConfigDto {
     
     @NotNull(message = "Penalty percentage is required")
     private BigDecimal penaltyPercentage;
+
+    @NotNull(message = "Initial payment percentage is required")
+    @Builder.Default
+    private BigDecimal initialPaymentPercentage = new BigDecimal("100.00");
 }

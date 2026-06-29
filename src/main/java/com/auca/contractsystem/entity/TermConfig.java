@@ -29,6 +29,10 @@ public class TermConfig {
     @Column(name = "penalty_percentage", precision = 5, scale = 2, nullable = false)
     private BigDecimal penaltyPercentage;
 
+    @Column(name = "initial_payment_percentage", precision = 5, scale = 2)
+    @Builder.Default
+    private BigDecimal initialPaymentPercentage = new BigDecimal("100.00");
+
     @Column(name = "updated_at")
     private LocalDateTime updatedAt;
 

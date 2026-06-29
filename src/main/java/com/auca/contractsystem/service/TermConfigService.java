@@ -11,6 +11,9 @@ import org.springframework.transaction.annotation.Transactional;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
+import java.math.BigDecimal;
+import java.time.LocalDate;
+import com.auca.contractsystem.exception.ContractException;
 
 @Service
 @RequiredArgsConstructor
@@ -37,6 +40,9 @@ public class TermConfigService {
             
         config.setTermId(dto.getTermId());
         config.setPenaltyPercentage(dto.getPenaltyPercentage());
+        config.setInitialPaymentPercentage(dto.getInitialPaymentPercentage() != null ? dto.getInitialPaymentPercentage() : new BigDecimal("100.00"));
+
+        BigDecimal totalPercentage = config.getInitialPaymentPercentage();
 
         if (config.getInstallments() != null) {
             config.getInstallments().clear();
@@ -46,6 +52,11 @@ public class TermConfigService {
 
         if (dto.getInstallments() != null) {
             for (com.auca.contractsystem.dto.TermInstallmentConfigDto iDto : dto.getInstallments()) {
+                if (iDto.getDeadlineDate().isBefore(LocalDate.now())) {
+                    throw new ContractException("Installment deadlines cannot be in the past.");
+                }
+                totalPercentage = totalPercentage.add(iDto.getPercentage());
+                
                 TermInstallmentConfig iConfig = TermInstallmentConfig.builder()
                     .installmentNumber(iDto.getInstallmentNumber())
                     .percentage(iDto.getPercentage())
@@ -54,6 +65,10 @@ public class TermConfigService {
                     .build();
                 config.getInstallments().add(iConfig);
             }
+        }
+        
+        if (totalPercentage.compareTo(new BigDecimal("100.00")) != 0 && totalPercentage.compareTo(new BigDecimal("100")) != 0) {
+            throw new ContractException("Total percentage (initial payment + installments) must equal 100%. Currently: " + totalPercentage + "%");
         }
         
         TermConfig saved = configRepository.save(config);
@@ -65,6 +80,7 @@ public class TermConfigService {
             .id(config.getId())
             .termId(config.getTermId())
             .penaltyPercentage(config.getPenaltyPercentage())
+            .initialPaymentPercentage(config.getInitialPaymentPercentage())
             .installments(config.getInstallments() != null ? config.getInstallments().stream().map(i -> 
                 com.auca.contractsystem.dto.TermInstallmentConfigDto.builder()
                     .id(i.getId())

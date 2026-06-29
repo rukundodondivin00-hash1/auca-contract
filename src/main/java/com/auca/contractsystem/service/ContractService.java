@@ -61,13 +61,24 @@ public class ContractService {
             throw new ContractException("No fee found for your registration. Please contact the registrar.");
         }
 
-        // ── 3. Check 50% eligibility using PrePayment records ─────────────────
+        // ── 3. Get TermConfig for minimum required check ────────────────────────
+        TermConfig termConfig = termConfigRepository.findByTermId(term.getId())
+            .orElseThrow(() -> new ContractException("No contract configuration found for this term."));
+
+        // ── 4. Check eligibility using PrePayment records ──────────────────────
         BigDecimal paidAmount = prePaymentRepository.sumAmountByStudentId(studentId);
-        BigDecimal minimumRequired = totalFees.divide(BigDecimal.valueOf(2));
+        
+        BigDecimal initialPaymentPercentage = termConfig.getInitialPaymentPercentage() != null 
+            ? termConfig.getInitialPaymentPercentage() 
+            : new BigDecimal("100.00");
+            
+        BigDecimal minimumRequired = totalFees.multiply(initialPaymentPercentage)
+            .divide(new BigDecimal("100"), 0, java.math.RoundingMode.HALF_UP);
+            
         if (paidAmount.compareTo(minimumRequired) < 0) {
             BigDecimal shortfall = minimumRequired.subtract(paidAmount);
             throw new ContractException(
-                "You must pay at least 50% of your total fees (" + minimumRequired.toPlainString() + " RWF) " +
+                "You must pay at least " + initialPaymentPercentage + "% of your total fees (" + minimumRequired.toPlainString() + " RWF) " +
                 "before signing a contract. You have paid " + paidAmount.toPlainString() + " RWF. " +
                 "Please pay " + shortfall.toPlainString() + " RWF more first.");
         }
@@ -82,13 +93,25 @@ public class ContractService {
             throw new ContractException("Your fees are fully paid. No contract is needed.");
         }
 
-        // ── 5. Get Installments from TermConfig ────────────
-        TermConfig termConfig = termConfigRepository.findByTermId(term.getId())
-            .orElseThrow(() -> new ContractException("No contract configuration found for this term."));
-            
+        // ── 6. Determine number of installments ──────────────────────────────
         List<TermInstallmentConfig> configInstallments = termConfig.getInstallments();
         if (configInstallments == null || configInstallments.isEmpty()) {
-            throw new ContractException("Term configuration has no installments set. Please contact the registrar.");
+            // If the staff configured 100% initial payment, no installments are needed.
+            // But if initial payment is < 100% and there are no installments, it's an error.
+            if (initialPaymentPercentage.compareTo(new BigDecimal("100")) < 0) {
+                throw new ContractException("Term configuration has no installments set. Please contact the registrar.");
+            }
+        }
+        
+        int requestedInstallments = configInstallments != null ? configInstallments.size() : 0;
+        if (request != null && request.getInstallments() != null) {
+            requestedInstallments = request.getInstallments().size();
+            if (configInstallments != null && requestedInstallments > configInstallments.size()) {
+                throw new ContractException("You cannot select more than " + configInstallments.size() + " installments.");
+            }
+            if (requestedInstallments < 1 && initialPaymentPercentage.compareTo(new BigDecimal("100")) < 0) {
+                throw new ContractException("You must select at least 1 installment.");
+            }
         }
         
         // Parse year/semester from termId
@@ -125,17 +148,33 @@ public class ContractService {
         java.util.List<ContractInstallment> savedInstallments = new java.util.ArrayList<>();
         BigDecimal totalAllocated = BigDecimal.ZERO;
         
-        for (int i = 0; i < configInstallments.size(); i++) {
+        for (int i = 0; i < requestedInstallments; i++) {
             TermInstallmentConfig tic = configInstallments.get(i);
             
-            // Calculate amount: (percentage / 100) * remainingAmount
+            // If student chose fewer installments, divide remainingAmount equally among them.
+            // Or if they just chose default, follow percentages.
             BigDecimal amountDue;
-            if (i == configInstallments.size() - 1) {
-                // Last installment gets the remainder to avoid rounding issues
+            if (i == requestedInstallments - 1) {
+                // Last installment gets the remainder
                 amountDue = remainingAmount.subtract(totalAllocated);
             } else {
-                amountDue = remainingAmount.multiply(tic.getPercentage())
-                    .divide(new BigDecimal("100"), 0, java.math.RoundingMode.HALF_UP);
+                if (requestedInstallments < configInstallments.size()) {
+                    // Divide equally if fewer installments
+                    amountDue = remainingAmount.divide(BigDecimal.valueOf(requestedInstallments), 0, java.math.RoundingMode.HALF_UP);
+                } else {
+                    // Use configured percentage of TOTAL fees
+                    amountDue = totalFees.multiply(tic.getPercentage())
+                        .divide(new BigDecimal("100"), 0, java.math.RoundingMode.HALF_UP);
+                    
+                    // Cap it to whatever is left to allocate
+                    BigDecimal leftToAllocate = remainingAmount.subtract(totalAllocated);
+                    if (amountDue.compareTo(leftToAllocate) > 0) {
+                        amountDue = leftToAllocate;
+                    }
+                    if (amountDue.compareTo(BigDecimal.ZERO) < 0) {
+                        amountDue = BigDecimal.ZERO;
+                    }
+                }
                 totalAllocated = totalAllocated.add(amountDue);
             }
             
