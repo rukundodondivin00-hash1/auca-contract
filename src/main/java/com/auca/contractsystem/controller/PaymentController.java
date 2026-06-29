@@ -117,8 +117,19 @@ public class PaymentController {
                 "Payment of " + request.getAmount() + " RWF recorded. Total paid: " + totalPaid + " RWF.", null));
         }
 
-        // If the contract was fully paid but there was extra money (overpayment), save it as PrePayment
+        // Record the amount successfully applied to installments into PrePayment history table
         BigDecimal amountApplied = response.getTotalAmountPaid();
+        if (amountApplied != null && amountApplied.compareTo(BigDecimal.ZERO) > 0) {
+            PrePayment installmentRecord = PrePayment.builder()
+                .studentId(studentId)
+                .amount(amountApplied)
+                .channel(request.getChannel() != null ? request.getChannel() : "DIRECT")
+                .feeType("INSTALLMENT_PAYMENT")
+                .build();
+            prePaymentRepository.save(installmentRecord);
+        }
+
+        // If the contract was fully paid but there was extra money (overpayment), save it as PrePayment
         if (request.getAmount().compareTo(amountApplied) > 0) {
             BigDecimal overpayment = request.getAmount().subtract(amountApplied);
             PrePayment overpaymentRecord = PrePayment.builder()
