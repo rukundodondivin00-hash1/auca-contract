@@ -168,8 +168,41 @@ public class ContractService {
             TermInstallmentConfig tic = configInstallments.get(i);
             
             BigDecimal amountDue;
-            if (useRequestedAmounts && request.getInstallments().get(i).getAmount() != null) {
-                amountDue = request.getInstallments().get(i).getAmount();
+            LocalDate deadlineDate = tic.getDeadlineDate();
+            
+            if (request != null && request.getInstallments() != null && request.getInstallments().size() == requestedInstallments) {
+                com.auca.contractsystem.dto.InstallmentRequest reqInst = request.getInstallments().get(i);
+                if (useRequestedAmounts && reqInst.getAmount() != null) {
+                    amountDue = reqInst.getAmount();
+                } else {
+                    if (i == requestedInstallments - 1) {
+                        amountDue = remainingAmount.subtract(totalAllocated);
+                    } else {
+                        if (requestedInstallments < configInstallments.size()) {
+                            amountDue = remainingAmount.divide(BigDecimal.valueOf(requestedInstallments), 0, java.math.RoundingMode.HALF_UP);
+                        } else {
+                            amountDue = totalFees.multiply(tic.getPercentage()).divide(new BigDecimal("100"), 0, java.math.RoundingMode.HALF_UP);
+                            BigDecimal leftToAllocate = remainingAmount.subtract(totalAllocated);
+                            if (amountDue.compareTo(leftToAllocate) > 0) amountDue = leftToAllocate;
+                            if (amountDue.compareTo(BigDecimal.ZERO) < 0) amountDue = BigDecimal.ZERO;
+                        }
+                    }
+                }
+                totalAllocated = totalAllocated.add(amountDue);
+                
+                // Use requested deadline date
+                if (reqInst.getDeadlineDate() != null) {
+                    deadlineDate = reqInst.getDeadlineDate();
+                    
+                    if (deadlineDate.isBefore(LocalDate.now())) {
+                        throw new ContractException("Deadline date for installment " + (i + 1) + " cannot be in the past.");
+                    }
+                    
+                    LocalDate finalDeadline = configInstallments.get(configInstallments.size() - 1).getDeadlineDate();
+                    if (finalDeadline != null && deadlineDate.isAfter(finalDeadline)) {
+                        throw new ContractException("Deadline date for installment " + (i + 1) + " cannot be after the final term deadline (" + finalDeadline + ").");
+                    }
+                }
             } else {
                 if (i == requestedInstallments - 1) {
                     amountDue = remainingAmount.subtract(totalAllocated);
@@ -189,7 +222,7 @@ public class ContractService {
             ContractInstallment installment = ContractInstallment.builder()
                 .contract(saved)
                 .installmentNumber(tic.getInstallmentNumber())
-                .deadlineDate(tic.getDeadlineDate())
+                .deadlineDate(deadlineDate)
                 .amountDue(amountDue)
                 .amountPaid(BigDecimal.ZERO)
                 .penaltyAmount(BigDecimal.ZERO)
