@@ -54,6 +54,14 @@ public class ContractController {
         return ResponseEntity.ok(ApiResponse.success("Contracts retrieved", contracts));
     }
 
+    @GetMapping("/my-permits")
+    @Operation(summary = "Get all exam permits for the authenticated student")
+    public ResponseEntity<ApiResponse<List<ExamPermitDto>>> getMyPermits(Authentication auth) {
+        String studentId = auth.getName();
+        List<ExamPermitDto> permits = contractService.getStudentPermits(studentId);
+        return ResponseEntity.ok(ApiResponse.success("Permits retrieved", permits));
+    }
+
     @GetMapping("/my-penalties")
     @Operation(summary = "Get all penalty history for the authenticated student")
     public ResponseEntity<ApiResponse<List<com.auca.contractsystem.dto.staff.StaffPenaltyDto>>> getMyPenalties(Authentication auth) {

@@ -65,11 +65,31 @@ public class StaffController {
 
     @PostMapping("/contracts/grant-permit")
     @Operation(summary = "Grant an exam permit directly")
-    public ResponseEntity<StaffContractDto> grantPermit(
+    public ResponseEntity<StaffExamPermitDto> grantPermit(
             org.springframework.security.core.Authentication auth,
             @Valid @RequestBody StaffGrantPermitRequest request) {
-        StaffContractDto contract = staffService.grantPermit(auth.getName(), request);
-        return ResponseEntity.ok(contract);
+        StaffExamPermitDto permit = staffService.grantPermit(auth.getName(), request);
+        return ResponseEntity.ok(permit);
+    }
+    
+    @GetMapping("/permits")
+    @Operation(summary = "Get all granted exam permits")
+    public ResponseEntity<PaginatedResponse<StaffExamPermitDto>> getAllPermits(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "20") int size,
+            @RequestParam(defaultValue = "createdAt") String sortBy,
+            @RequestParam(defaultValue = "desc") String direction) {
+        Page<StaffExamPermitDto> permitPage = staffService.getAllPermits(page, size, sortBy, direction);
+        PaginatedResponse<StaffExamPermitDto> response = PaginatedResponse.<StaffExamPermitDto>builder()
+            .content(permitPage.getContent())
+            .totalElements(permitPage.getTotalElements())
+            .totalPages(permitPage.getTotalPages())
+            .number(permitPage.getNumber())
+            .size(permitPage.getSize())
+            .first(permitPage.isFirst())
+            .last(permitPage.isLast())
+            .build();
+        return ResponseEntity.ok(response);
     }
 
     @GetMapping("/contracts/student/{studentId}")

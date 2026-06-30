@@ -28,9 +28,7 @@ public class StaffContractDto {
     private LocalDate agreedDate;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
-    private String grantedBy;
-    private String grantReason;
-    private String permitType;
+
     private int installmentCount;
     private BigDecimal totalPaidOnInstallments;
     private BigDecimal totalPenaltyOnInstallments;

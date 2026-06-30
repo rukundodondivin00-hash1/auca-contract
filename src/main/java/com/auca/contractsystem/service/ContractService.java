@@ -24,6 +24,7 @@ public class ContractService {
     private final PrePaymentRepository prePaymentRepository;
     private final TermConfigRepository termConfigRepository;
     private final PenaltyRepository penaltyRepository;
+    private final ExamPermitRepository examPermitRepository;
 
     @Transactional
     public ContractDto createContract(String studentId, ContractRequest request) {
@@ -239,8 +240,22 @@ public class ContractService {
 
 
     public List<ContractDto> getStudentContracts(String studentId) {
-        return contractRepository.findByStudentId(studentId)
-            .stream().map(this::toContractDto).toList();
+        List<Contract> contracts = contractRepository.findByStudentId(studentId);
+        return contracts.stream().map(this::toContractDto).collect(java.util.stream.Collectors.toList());
+    }
+
+    public List<ExamPermitDto> getStudentPermits(String studentId) {
+        List<ExamPermit> permits = examPermitRepository.findByStudentId(studentId);
+        return permits.stream().map(p -> ExamPermitDto.builder()
+                .id(p.getId())
+                .studentId(p.getStudentId())
+                .studentName(p.getStudentName())
+                .termId(p.getTermId())
+                .permitType(p.getPermitType())
+                .grantedBy(p.getGrantedBy())
+                .grantReason(p.getGrantReason())
+                .createdAt(p.getCreatedAt())
+                .build()).collect(java.util.stream.Collectors.toList());
     }
 
     private ContractDto toContractDto(Contract c) {

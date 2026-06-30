@@ -28,6 +28,7 @@ public class StaffService {
     private final PenaltyRepository penaltyRepository;
     private final UserRepository userRepository;
     private final PrePaymentRepository prePaymentRepository;
+    private final ExamPermitRepository examPermitRepository;
     private final JwtUtil jwtUtil;
     private final PasswordEncoder passwordEncoder;
     private final AucaApiClient aucaApiClient;
@@ -206,43 +207,44 @@ public class StaffService {
     }
 
     @Transactional
-    public StaffContractDto grantPermit(String staffUsername, StaffGrantPermitRequest request) {
+    public StaffExamPermitDto grantPermit(String staffUsername, StaffGrantPermitRequest request) {
         AucaTermResponse term = aucaApiClient.getActiveTerm();
         if (term == null) {
             throw new ResourceNotFoundException("No active term configuration found");
         }
         
         String rawTermId = term.getId() != null ? term.getId() : "";
-        int academicYear = java.time.Year.now().getValue();
-        String termSemester = "1";
-        if (rawTermId.contains("/")) {
-            String[] parts = rawTermId.split("/");
-            try { academicYear = Integer.parseInt(parts[0].trim()); } catch (NumberFormatException ignored) {}
-            termSemester = parts.length > 1 ? parts[1].trim() : "1";
-        } else if (term.getYear() != null) {
-            try { academicYear = Integer.parseInt(term.getYear()); } catch (NumberFormatException ignored) {}
-            termSemester = term.getSemester() != null ? term.getSemester() : "1";
-        }
-
-        Contract contract = Contract.builder()
+        
+        ExamPermit permit = ExamPermit.builder()
                 .studentId(request.getStudentId())
-                .termId(term.getId())
-                .academicYear(String.valueOf(academicYear))
-                .semester(termSemester)
-                .totalFees(BigDecimal.ZERO)
-                .balanceAtSigning(BigDecimal.ZERO)
-                .amountPaidAtSigning(BigDecimal.ZERO)
-                .remainingAtSigning(BigDecimal.ZERO)
-                .status(Contract.ContractStatus.ACTIVE)
-                .agreed(true)
-                .agreedDate(java.time.LocalDate.now())
-                .grantedBy(staffUsername)
-                .grantReason(request.getReason())
+                .termId(rawTermId)
                 .permitType(request.getPermitType())
+                .grantReason(request.getReason())
+                .grantedBy(staffUsername)
                 .build();
-
-        Contract saved = contractRepository.save(contract);
-        return toStaffContractDto(saved);
+                
+        ExamPermit saved = examPermitRepository.save(permit);
+        return toStaffExamPermitDto(saved);
+    }
+    
+    public Page<StaffExamPermitDto> getAllPermits(int page, int size, String sortBy, String direction) {
+        Sort sort = Sort.by(Sort.Direction.fromString(direction), sortBy);
+        Pageable pageable = PageRequest.of(page, size, sort);
+        Page<ExamPermit> permitsPage = examPermitRepository.findAll(pageable);
+        return permitsPage.map(this::toStaffExamPermitDto);
+    }
+    
+    private StaffExamPermitDto toStaffExamPermitDto(ExamPermit p) {
+        return StaffExamPermitDto.builder()
+            .id(p.getId())
+            .studentId(p.getStudentId())
+            .studentName(p.getStudentName())
+            .termId(p.getTermId())
+            .permitType(p.getPermitType())
+            .grantedBy(p.getGrantedBy())
+            .grantReason(p.getGrantReason())
+            .createdAt(p.getCreatedAt())
+            .build();
     }
 
     private StaffContractDto toStaffContractDto(Contract c) {
@@ -273,9 +275,6 @@ public class StaffService {
                 .installmentCount(installments.size())
                 .totalPaidOnInstallments(totalPaid)
                 .totalPenaltyOnInstallments(totalPenalty)
-                .grantedBy(c.getGrantedBy())
-                .grantReason(c.getGrantReason())
-                .permitType(c.getPermitType())
                 .build();
     }
 

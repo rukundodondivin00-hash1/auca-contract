@@ -25,8 +25,6 @@ public class ContractDto {
     private Boolean agreed;
     private LocalDate agreedDate;
     private LocalDateTime createdAt;
-    private String grantedBy;
-    private String grantReason;
-    private String permitType;
+
     private List<InstallmentDto> installments;
 }
