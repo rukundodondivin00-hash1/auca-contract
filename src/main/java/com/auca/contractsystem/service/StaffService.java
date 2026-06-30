@@ -1,5 +1,6 @@
 package com.auca.contractsystem.service;
 
+import com.auca.contractsystem.client.AucaApiClient;
 import com.auca.contractsystem.dto.*;
 import com.auca.contractsystem.dto.staff.*;
 import com.auca.contractsystem.entity.*;
@@ -29,6 +30,7 @@ public class StaffService {
     private final PrePaymentRepository prePaymentRepository;
     private final JwtUtil jwtUtil;
     private final PasswordEncoder passwordEncoder;
+    private final AucaApiClient aucaApiClient;
 
     public LoginResponse login(String usernameOrEmail, String password) {
         User user = userRepository.findByEmail(usernameOrEmail)
@@ -203,6 +205,46 @@ public class StaffService {
         return contracts.stream().map(this::toStaffContractDto).collect(Collectors.toList());
     }
 
+    @Transactional
+    public StaffContractDto grantPermit(String staffUsername, StaffGrantPermitRequest request) {
+        AucaTermResponse term = aucaApiClient.getActiveTerm();
+        if (term == null) {
+            throw new ResourceNotFoundException("No active term configuration found");
+        }
+        
+        String rawTermId = term.getId() != null ? term.getId() : "";
+        int academicYear = java.time.Year.now().getValue();
+        String termSemester = "1";
+        if (rawTermId.contains("/")) {
+            String[] parts = rawTermId.split("/");
+            try { academicYear = Integer.parseInt(parts[0].trim()); } catch (NumberFormatException ignored) {}
+            termSemester = parts.length > 1 ? parts[1].trim() : "1";
+        } else if (term.getYear() != null) {
+            try { academicYear = Integer.parseInt(term.getYear()); } catch (NumberFormatException ignored) {}
+            termSemester = term.getSemester() != null ? term.getSemester() : "1";
+        }
+
+        Contract contract = Contract.builder()
+                .studentId(request.getStudentId())
+                .termId(term.getId())
+                .academicYear(String.valueOf(academicYear))
+                .semester(termSemester)
+                .totalFees(BigDecimal.ZERO)
+                .balanceAtSigning(BigDecimal.ZERO)
+                .amountPaidAtSigning(BigDecimal.ZERO)
+                .remainingAtSigning(BigDecimal.ZERO)
+                .status(Contract.ContractStatus.ACTIVE)
+                .agreed(true)
+                .agreedDate(java.time.LocalDate.now())
+                .grantedBy(staffUsername)
+                .grantReason(request.getReason())
+                .permitType(request.getPermitType())
+                .build();
+
+        Contract saved = contractRepository.save(contract);
+        return toStaffContractDto(saved);
+    }
+
     private StaffContractDto toStaffContractDto(Contract c) {
         List<ContractInstallment> installments = installmentRepository.findByContractId(c.getId());
         BigDecimal totalPaid = installments.stream()
@@ -231,6 +273,9 @@ public class StaffService {
                 .installmentCount(installments.size())
                 .totalPaidOnInstallments(totalPaid)
                 .totalPenaltyOnInstallments(totalPenalty)
+                .grantedBy(c.getGrantedBy())
+                .grantReason(c.getGrantReason())
+                .permitType(c.getPermitType())
                 .build();
     }
 

@@ -59,6 +59,15 @@ public class Contract {
     @Column(name = "created_at")
     private LocalDateTime createdAt;
 
+    @Column(name = "granted_by")
+    private String grantedBy;
+
+    @Column(name = "grant_reason")
+    private String grantReason;
+
+    @Column(name = "permit_type")
+    private String permitType;
+
     @Column(name = "updated_at")
     private LocalDateTime updatedAt;
 

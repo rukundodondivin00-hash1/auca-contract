@@ -63,6 +63,15 @@ public class StaffController {
         return ResponseEntity.ok(contract);
     }
 
+    @PostMapping("/contracts/grant-permit")
+    @Operation(summary = "Grant an exam permit directly")
+    public ResponseEntity<StaffContractDto> grantPermit(
+            org.springframework.security.core.Authentication auth,
+            @Valid @RequestBody StaffGrantPermitRequest request) {
+        StaffContractDto contract = staffService.grantPermit(auth.getName(), request);
+        return ResponseEntity.ok(contract);
+    }
+
     @GetMapping("/contracts/student/{studentId}")
     @Operation(summary = "Get contracts by student ID")
     public ResponseEntity<PaginatedResponse<StaffContractDto>> getContractsByStudent(
