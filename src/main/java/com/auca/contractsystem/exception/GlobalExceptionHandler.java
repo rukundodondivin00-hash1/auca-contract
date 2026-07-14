@@ -40,7 +40,7 @@ public class GlobalExceptionHandler {
             return ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE).body(ApiResponse.error("Bank service is currently unavailable"));
         }
         log.error("Unexpected runtime error: {}", e.getMessage(), e);
-        return ResponseEntity.internalServerError().body(ApiResponse.error("An unexpected error occurred"));
+        return ResponseEntity.internalServerError().body(ApiResponse.error("An unexpected error occurred: " + e.getMessage()));
     }
 
     @ExceptionHandler(MethodArgumentNotValidException.class)
